@@ -296,7 +296,7 @@ const PeopleManagement = () => {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
 
-          <div className="bg-white rounded-lg w-full max-w-2xl p-6">
+          <div className="bg-white rounded-lg w-full max-w-2xl p-6 overflow-y-auto max-h-[90vh]">
 
             <h2 className="text-xl font-bold mb-4">
               {editingPerson ? "Edit Person" : "Add Person"}
@@ -359,6 +359,25 @@ const PeopleManagement = () => {
                 label="Photo"
                 onFile={setPhotoFile}
               />
+
+              {/* NEW PROFILE SECTIONS FIELD */}
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Profile Sections (JSON)
+                </label>
+
+                <textarea
+                  value={jsonText}
+                  onChange={(e) => handleJsonChange(e.target.value)}
+                  className="w-full border rounded px-3 py-2 font-mono text-sm"
+                  rows={8}
+                />
+
+                {jsonError && (
+                  <p className="text-red-600 text-sm mt-1">{jsonError}</p>
+                )}
+              </div>
 
               <button className="bg-blue-600 text-white px-4 py-2 rounded">
                 {editingPerson ? "Update" : "Create"}
