@@ -28,13 +28,25 @@ export async function up(queryInterface) {
   await addColumnSafe("education", { type: DataTypes.JSON });
   await addColumnSafe("publications", { type: DataTypes.JSON });
   await addColumnSafe("workshops", { type: DataTypes.JSON });
+  await addColumnSafe("summary", { type: DataTypes.TEXT });
+
+  await addColumnSafe("joining_date", { type: DataTypes.DATE });
+
+  await addColumnSafe("department", { type: DataTypes.STRING });
+
+  await addColumnSafe("profile_sections", { type: DataTypes.JSON });
+
+  await addColumnSafe("person_type", {
+    type: DataTypes.STRING,
+    defaultValue: "Faculty"
+  });
 }
 
 export async function down(queryInterface) {
   const table = "People";
 
   const safeRemove = (col) =>
-    queryInterface.removeColumn(table, col).catch(() => {});
+    queryInterface.removeColumn(table, col).catch(() => { });
 
   await safeRemove("slug");
   await safeRemove("phone");

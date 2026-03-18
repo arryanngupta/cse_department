@@ -45,7 +45,7 @@ export const getSliders = async (req, res, next) => {
 /* ======================= PEOPLE LIST ======================= */
 export const getPeople = async (req, res, next) => {
   try {
-    const { designation,person_type, area, q, page = 1, limit = 20 } = req.query;
+    const { designation, person_type, area, q, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
 
     const where = {};
@@ -374,10 +374,15 @@ export const getInfoBlock = async (req, res, next) => {
   }
 };
 
+/* ======================= RESEARCH ======================= */
+
 export const getResearch = async (req, res, next) => {
   try {
     const research = await Research.findAll({
-      order: [['display_order', 'ASC']]
+      order: [
+        ['display_order', 'ASC'],
+        ['createdAt', 'DESC']
+      ]
     });
 
     res.json({ data: research });
@@ -389,7 +394,11 @@ export const getResearch = async (req, res, next) => {
 export const getResearchById = async (req, res, next) => {
   try {
     const research = await Research.findByPk(req.params.id);
-    if (!research) return res.status(404).json({ error: 'Research not found' });
+
+    if (!research) {
+      return res.status(404).json({ error: 'Research not found' });
+    }
+
     res.json({ data: research });
   } catch (error) {
     next(error);
@@ -398,9 +407,18 @@ export const getResearchById = async (req, res, next) => {
 
 export const getFacilities = async (req, res, next) => {
   try {
+    const { category } = req.query;
+
+    const where = { is_active: true };
+
+    // 🔥 FILTER BY CATEGORY
+    if (category) {
+      where.category = category;
+    }
+
     const facilities = await Facility.findAll({
-      where: { is_active: true },
-      order: [['display_order', 'ASC']]
+      where,
+      order: [['display_order', 'ASC']],
     });
 
     res.json({ data: facilities });

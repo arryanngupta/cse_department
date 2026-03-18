@@ -52,13 +52,17 @@ export default function ResearchManagement() {
   };
 
   const openModal = (item = null) => {
-    if (item) {
+    if (item?.category) {
+      setEditingResearch(null);
+      setFormData({ ...EMPTY_FORM, category: item.category });
+    } else if (item) {
       setEditingResearch(item);
       setFormData({ ...EMPTY_FORM, ...item });
     } else {
       setEditingResearch(null);
       setFormData(EMPTY_FORM);
     }
+
     setImageFile(null);
     setShowModal(true);
   };
@@ -114,13 +118,37 @@ export default function ResearchManagement() {
 
   return (
     <div>
+      // ONLY SHOWING CHANGED TOP PART (rest SAME)
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Research</h1>
-        <button className="btn-primary" onClick={() => openModal()}>
-          Add Research
-        </button>
-      </div>
 
+        <div className="flex gap-3">
+          <button
+            onClick={() => openModal({ category: "Publication" })}
+            className="btn-primary"
+          >
+            + Publication
+          </button>
+          <button
+            onClick={() => openModal({ category: "Project" })}
+            className="btn-primary"
+          >
+            + Project
+          </button>
+          <button
+            onClick={() => openModal({ category: "Patent" })}
+            className="btn-primary"
+          >
+            + Patent
+          </button>
+          <button
+            onClick={() => openModal({ category: "Collaboration" })}
+            className="btn-primary"
+          >
+            + Collaboration
+          </button>
+        </div>
+      </div>
       <table className="w-full bg-white shadow rounded">
         <thead className="bg-gray-100">
           <tr>
@@ -153,7 +181,6 @@ export default function ResearchManagement() {
           ))}
         </tbody>
       </table>
-
       {/* ================= MODAL ================= */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -211,6 +238,23 @@ export default function ResearchManagement() {
                     label="Funding Agency"
                     value={formData.funding_agency}
                     onChange={(v) => handleChange("funding_agency", v)}
+                  />
+                  <Input
+                    label="Funding Amount"
+                    value={formData.funding_amount}
+                    onChange={(v) => handleChange("funding_amount", v)}
+                  />
+
+                  <Input
+                    label="Duration"
+                    value={formData.duration}
+                    onChange={(v) => handleChange("duration", v)}
+                  />
+
+                  <Input
+                    label="PI / Co-PI"
+                    value={formData.pi_co_pi}
+                    onChange={(v) => handleChange("pi_co_pi", v)}
                   />
                   <Input
                     label="Status"

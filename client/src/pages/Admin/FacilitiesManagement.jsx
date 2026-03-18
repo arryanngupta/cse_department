@@ -6,7 +6,8 @@ const FacilitiesManagement = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingFacility, setEditingFacility] = useState(null);
-  const [formData, setFormData] = useState({
+
+  const EMPTY_FORM = {
     name: '',
     category: '',
     description: '',
@@ -16,7 +17,9 @@ const FacilitiesManagement = () => {
     in_charge: '',
     is_active: true,
     display_order: 0,
-  });
+  };
+
+  const [formData, setFormData] = useState(EMPTY_FORM);
   const [imageFile, setImageFile] = useState(null);
 
   useEffect(() => {
@@ -26,7 +29,7 @@ const FacilitiesManagement = () => {
   const fetchFacilities = async () => {
     try {
       const response = await adminAPI.getFacilities();
-      setFacilities(response.data.data);
+      setFacilities(response.data.data || []);
     } catch (error) {
       console.error('Error fetching facilities:', error);
       alert('Failed to fetch facilities');
@@ -37,8 +40,12 @@ const FacilitiesManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const data = new FormData();
-    Object.keys(formData).forEach((key) => data.append(key, formData[key]));
+    Object.entries(formData).forEach(([k, v]) => {
+      data.append(k, v);
+    });
+
     if (imageFile) data.append('image', imageFile);
 
     try {
@@ -49,6 +56,7 @@ const FacilitiesManagement = () => {
         await adminAPI.createFacility(data);
         alert('Facility created successfully!');
       }
+
       fetchFacilities();
       closeModal();
     } catch (error) {
@@ -81,23 +89,14 @@ const FacilitiesManagement = () => {
         location: facility.location || '',
         capacity: facility.capacity || '',
         in_charge: facility.in_charge || '',
-        is_active: facility.is_active || true,
+        is_active: facility.is_active ?? true,
         display_order: facility.display_order || 0,
       });
     } else {
       setEditingFacility(null);
-      setFormData({
-        name: '',
-        category: '',
-        description: '',
-        specifications: '',
-        location: '',
-        capacity: '',
-        in_charge: '',
-        is_active: true,
-        display_order: 0,
-      });
+      setFormData(EMPTY_FORM);
     }
+
     setImageFile(null);
     setShowModal(true);
   };
@@ -105,17 +104,7 @@ const FacilitiesManagement = () => {
   const closeModal = () => {
     setShowModal(false);
     setEditingFacility(null);
-    setFormData({
-      name: '',
-      category: '',
-      description: '',
-      specifications: '',
-      location: '',
-      capacity: '',
-      in_charge: '',
-      is_active: true,
-      display_order: 0,
-    });
+    setFormData(EMPTY_FORM);
     setImageFile(null);
   };
 
@@ -128,6 +117,7 @@ const FacilitiesManagement = () => {
 
   return (
     <div>
+      {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Facilities</h1>
         <button onClick={() => openModal()} className="btn-primary">
@@ -135,6 +125,7 @@ const FacilitiesManagement = () => {
         </button>
       </div>
 
+      {/* TABLE */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50">
@@ -146,6 +137,7 @@ const FacilitiesManagement = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
+
           <tbody className="divide-y divide-gray-200">
             {facilities.map((facility) => (
               <tr key={facility.id}>
@@ -160,8 +152,15 @@ const FacilitiesManagement = () => {
                     <div className="h-12 w-12 bg-gray-200 rounded"></div>
                   )}
                 </td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{facility.name}</td>
-                <td className="px-6 py-4 text-sm text-gray-900">{facility.category}</td>
+
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                  {facility.name}
+                </td>
+
+                <td className="px-6 py-4 text-sm text-gray-900">
+                  {facility.category}
+                </td>
+
                 <td className="px-6 py-4">
                   <span
                     className={`px-2 py-1 text-xs rounded-full ${
@@ -173,6 +172,7 @@ const FacilitiesManagement = () => {
                     {facility.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </td>
+
                 <td className="px-6 py-4 text-sm space-x-2">
                   <button
                     onClick={() => openModal(facility)}
@@ -180,6 +180,7 @@ const FacilitiesManagement = () => {
                   >
                     Edit
                   </button>
+
                   <button
                     onClick={() => handleDelete(facility.id)}
                     className="text-red-600 hover:underline"
@@ -193,16 +194,20 @@ const FacilitiesManagement = () => {
         </table>
       </div>
 
-      {/* Modal */}
+      {/* MODAL */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-4">
+
+            <h2 className="text-2xl font-bold mb-6">
               {editingFacility ? 'Edit Facility' : 'Add Facility'}
             </h2>
+
             <form onSubmit={handleSubmit} className="space-y-4">
+
+              {/* NAME */}
               <div>
-                <label className="block text-sm font-medium mb-2">Name *</label>
+                <label className="block text-sm font-medium mb-1">Name *</label>
                 <input
                   type="text"
                   required
@@ -213,19 +218,29 @@ const FacilitiesManagement = () => {
                   className="input-field"
                 />
               </div>
+
+              {/* CATEGORY (FIXED 🔥) */}
               <div>
-                <label className="block text-sm font-medium mb-2">Category</label>
-                <input
-                  type="text"
+                <label className="block text-sm font-medium mb-1">Category *</label>
+                <select
+                  required
                   value={formData.category}
                   onChange={(e) =>
                     setFormData({ ...formData, category: e.target.value })
                   }
                   className="input-field"
-                />
+                >
+                  <option value="">Select Category</option>
+                  <option value="Laboratory">Laboratory</option>
+                  <option value="Infrastructure">Infrastructure</option>
+                  <option value="Equipment">Equipment</option>
+                  <option value="Software">Software</option>
+                </select>
               </div>
+
+              {/* DESCRIPTION */}
               <div>
-                <label className="block text-sm font-medium mb-2">Description</label>
+                <label className="block text-sm font-medium mb-1">Description</label>
                 <textarea
                   rows={3}
                   value={formData.description}
@@ -233,10 +248,12 @@ const FacilitiesManagement = () => {
                     setFormData({ ...formData, description: e.target.value })
                   }
                   className="input-field"
-                ></textarea>
+                />
               </div>
+
+              {/* SPECIFICATIONS */}
               <div>
-                <label className="block text-sm font-medium mb-2">Specifications</label>
+                <label className="block text-sm font-medium mb-1">Specifications</label>
                 <textarea
                   rows={2}
                   value={formData.specifications}
@@ -244,53 +261,50 @@ const FacilitiesManagement = () => {
                     setFormData({ ...formData, specifications: e.target.value })
                   }
                   className="input-field"
-                ></textarea>
+                />
               </div>
+
+              {/* LOCATION + CAPACITY */}
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Location</label>
-                  <input
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) =>
-                      setFormData({ ...formData, location: e.target.value })
-                    }
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Capacity</label>
-                  <input
-                    type="text"
-                    value={formData.capacity}
-                    onChange={(e) =>
-                      setFormData({ ...formData, capacity: e.target.value })
-                    }
-                    className="input-field"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">In-Charge</label>
                 <input
-                  type="text"
-                  value={formData.in_charge}
+                  placeholder="Location"
+                  value={formData.location}
                   onChange={(e) =>
-                    setFormData({ ...formData, in_charge: e.target.value })
+                    setFormData({ ...formData, location: e.target.value })
+                  }
+                  className="input-field"
+                />
+
+                <input
+                  placeholder="Capacity"
+                  value={formData.capacity}
+                  onChange={(e) =>
+                    setFormData({ ...formData, capacity: e.target.value })
                   }
                   className="input-field"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Image</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImageFile(e.target.files[0])}
-                  className="input-field"
-                />
-              </div>
-              <div className="flex items-center space-x-3">
+
+              {/* INCHARGE */}
+              <input
+                placeholder="In-Charge"
+                value={formData.in_charge}
+                onChange={(e) =>
+                  setFormData({ ...formData, in_charge: e.target.value })
+                }
+                className="input-field"
+              />
+
+              {/* IMAGE */}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files[0])}
+                className="input-field"
+              />
+
+              {/* ACTIVE */}
+              <label className="flex gap-2 items-center">
                 <input
                   type="checkbox"
                   checked={formData.is_active}
@@ -298,23 +312,24 @@ const FacilitiesManagement = () => {
                     setFormData({ ...formData, is_active: e.target.checked })
                   }
                 />
-                <label className="text-sm font-medium">Active</label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Display Order</label>
-                <input
-                  type="number"
-                  value={formData.display_order}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      display_order: parseInt(e.target.value),
-                    })
-                  }
-                  className="input-field"
-                />
-              </div>
-              <div className="flex space-x-4">
+                Active
+              </label>
+
+              {/* DISPLAY ORDER */}
+              <input
+                type="number"
+                value={formData.display_order}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    display_order: parseInt(e.target.value) || 0,
+                  })
+                }
+                className="input-field"
+              />
+
+              {/* BUTTONS */}
+              <div className="flex gap-4 pt-4">
                 <button type="submit" className="btn-primary flex-1">
                   Save
                 </button>
@@ -326,6 +341,7 @@ const FacilitiesManagement = () => {
                   Cancel
                 </button>
               </div>
+
             </form>
           </div>
         </div>

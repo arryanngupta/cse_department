@@ -8,8 +8,7 @@ export default function Research() {
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
 
-  const typeParam = searchParams.get("type"); 
-  // Publication | Project | Patent | Collaboration | null
+  const typeParam = searchParams.get("type");
 
   useEffect(() => {
     loadResearch();
@@ -20,14 +19,11 @@ export default function Research() {
       setLoading(true);
       const res = await publicAPI.getResearch();
       setResearch(res.data?.data || []);
-    } catch (e) {
-      console.error("Failed to load research", e);
     } finally {
       setLoading(false);
     }
   }
 
-  /* ===== GROUP DATA ===== */
   const publications = useMemo(
     () => research.filter(r => r.category === "Publication"),
     [research]
@@ -54,115 +50,95 @@ export default function Research() {
     <div className="bg-white px-8 py-12">
       <div className="max-w-6xl mx-auto">
 
-        {/* ===== PAGE HEADER ===== */}
+        {/* HEADER */}
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold text-[#A6192E] mb-3">Research</h1>
           <div className="h-1 w-24 bg-[#A6192E] mx-auto" />
-          <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
-            Explore publications, funded projects, patents and academic collaborations.
-          </p>
         </div>
 
-        {/* ================= PUBLICATIONS ================= */}
+        {/* PUBLICATIONS */}
         {(!typeParam || typeParam === "Publication") && (
           <Section title="Research Publications">
-            {publications.length ? (
-              <ul className="space-y-4">
-                {publications.map(p => (
-                  <li key={p.id} className="border-b pb-4">
-                    <div className="font-semibold">{p.title}</div>
-                    <div className="text-sm text-gray-600">
-                      {p.authors} {p.journal && `— ${p.journal}`} {p.year && `(${p.year})`}
-                    </div>
-                    {p.link && (
-                      <a
-                        href={p.link}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[#A6192E] text-sm"
-                      >
-                        View Publication →
-                      </a>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : <Empty />}
+            {publications.map(p => (
+              <div key={p.id} className="border-b pb-4 mb-4">
+                <div className="font-semibold">{p.title}</div>
+                <div className="text-sm text-gray-600">
+                  {p.authors} — {p.journal} ({p.year})
+                </div>
+              </div>
+            ))}
           </Section>
         )}
 
-        {/* ================= PROJECTS ================= */}
+        {/* PROJECTS (TABLE LIKE LNMIIT) */}
         {(!typeParam || typeParam === "Project") && (
-          <Section title="Research Projects">
-            {projects.length ? (
-              <div className="grid md:grid-cols-2 gap-8">
-                {projects.map(p => (
-                  <div key={p.id} className="border rounded-lg p-5 shadow-sm">
-                    <h3 className="font-semibold mb-2">{p.title}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{p.description}</p>
-                    <div className="text-sm">
-                      {p.faculty && <><strong>PI:</strong> {p.faculty}<br /></>}
-                      {p.funding_agency && <><strong>Funding:</strong> {p.funding_agency}<br /></>}
-                      {p.status && <><strong>Status:</strong> {p.status}</>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : <Empty />}
-          </Section>
-        )}
-
-        {/* ================= PATENTS ================= */}
-        {(!typeParam || typeParam === "Patent") && (
-          <Section title="Patents">
-            {patents.length ? (
-              <div className="overflow-x-auto">
-                <table className="w-full border">
-                  <thead className="bg-[#8B0000] text-white">
-                    <tr>
-                      <th className="p-3 text-left">Title</th>
-                      <th className="p-3 text-left">Inventors</th>
-                      <th className="p-3 text-left">Application No.</th>
-                      <th className="p-3 text-left">Status</th>
+          <Section title="Sponsored Research Projects">
+            <div className="overflow-x-auto">
+              <table className="w-full border text-sm">
+                <thead className="bg-[#8B0000] text-white">
+                  <tr>
+                    <th className="p-3 text-left">Title</th>
+                    <th className="p-3 text-left">Funding Agency</th>
+                    <th className="p-3 text-left">PI</th>
+                    <th className="p-3 text-left">Funding</th>
+                    <th className="p-3 text-left">Duration</th>
+                    <th className="p-3 text-left">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projects.map(p => (
+                    <tr key={p.id} className="border-t">
+                      <td className="p-3">{p.title}</td>
+                      <td className="p-3">{p.funding_agency}</td>
+                      <td className="p-3">{p.pi_co_pi || p.faculty}</td>
+                      <td className="p-3">{p.funding_amount}</td>
+                      <td className="p-3">{p.duration}</td>
+                      <td className="p-3">{p.status}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {patents.map(p => (
-                      <tr key={p.id} className="border-t">
-                        <td className="p-3">{p.title}</td>
-                        <td className="p-3">{p.inventors}</td>
-                        <td className="p-3">{p.application_no}</td>
-                        <td className="p-3">{p.patent_status}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : <Empty />}
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Section>
         )}
 
-        {/* ================= COLLABORATIONS ================= */}
+        {/* PATENTS */}
+        {(!typeParam || typeParam === "Patent") && (
+          <Section title="IPR">
+            <table className="w-full border">
+              <thead className="bg-[#8B0000] text-white">
+                <tr>
+                  <th className="p-3">Title</th>
+                  <th className="p-3">Inventors</th>
+                  <th className="p-3">Application</th>
+                  <th className="p-3">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {patents.map(p => (
+                  <tr key={p.id}>
+                    <td className="p-3">{p.title}</td>
+                    <td className="p-3">{p.inventors}</td>
+                    <td className="p-3">{p.application_no}</td>
+                    <td className="p-3">{p.patent_status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Section>
+        )}
+
+        {/* COLLABORATIONS */}
         {(!typeParam || typeParam === "Collaboration") && (
           <Section title="Collaborations">
-            {collaborations.length ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                {collaborations.map(c => (
-                  <div key={c.id} className="text-center">
-                    {c.image_path && (
-                      <img
-                        src={c.image_path}
-                        alt={c.collaboration_org}
-                        className="h-20 mx-auto object-contain"
-                      />
-                    )}
-                    <div className="mt-3 font-medium">
-                      {c.collaboration_org}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : <Empty />}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              {collaborations.map(c => (
+                <div key={c.id} className="text-center">
+                  <img src={c.image_path} className="h-20 mx-auto" />
+                  <div>{c.collaboration_org}</div>
+                </div>
+              ))}
+            </div>
           </Section>
         )}
 
@@ -171,14 +147,11 @@ export default function Research() {
   );
 }
 
-/* ===== Helpers ===== */
 const Section = ({ title, children }) => (
   <section className="mb-20">
-    <h2 className="text-3xl font-serif font-bold mb-8">{title}</h2>
+    <h2 className="text-3xl font-serif border-b-4 border-black pb-3 mb-8">
+      {title}
+    </h2>
     {children}
   </section>
-);
-
-const Empty = () => (
-  <p className="italic text-gray-500">No items available.</p>
 );

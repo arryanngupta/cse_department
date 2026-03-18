@@ -15,71 +15,66 @@ export const up = async (queryInterface) => {
     },
     category: {
       type: DataTypes.STRING,
-      allowNull: true, // e.g., "Project", "Publication", "Patent"
+      allowNull: true,
     },
     description: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
 
-    // 🔹 Additional Research Details
+    // 🔹 Project Fields
     faculty: {
       type: DataTypes.STRING,
       allowNull: true,
-      comment: 'Name(s) of faculty involved in the research',
+    },
+    pi_co_pi: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     funding_agency: {
       type: DataTypes.STRING,
       allowNull: true,
-      comment: 'Agency or organization providing funding',
     },
     funding_amount: {
       type: DataTypes.STRING,
       allowNull: true,
-      comment: 'Amount of funding received (in INR/USD)',
     },
     duration: {
       type: DataTypes.STRING,
       allowNull: true,
-      comment: 'Duration of the research, e.g. 2023–2025',
     },
     status: {
-      type: DataTypes.ENUM('Ongoing', 'Completed', 'Proposed'),
-      allowNull: true,
+      type: DataTypes.ENUM('Ongoing', 'Completed', 'Proposed', 'In Progress'),
       defaultValue: 'Ongoing',
     },
 
-    // 🔹 Links and Media
-    link: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      comment: 'External link to publication/project site',
-    },
-    image_path: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      comment: 'Path or URL to research thumbnail image',
-    },
+    // 🔹 Publication
+    authors: DataTypes.TEXT,
+    journal: DataTypes.STRING,
+    year: DataTypes.STRING,
 
-    // 🔹 Display Management
+    // 🔹 Patent
+    inventors: DataTypes.TEXT,
+    application_no: DataTypes.STRING,
+    patent_status: DataTypes.STRING,
+
+    // 🔹 Collaboration
+    collaboration_org: DataTypes.STRING,
+
+    // 🔹 Common
+    link: DataTypes.STRING,
+    image_path: DataTypes.STRING,
     display_order: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
-    is_featured: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
 
-    // 🔹 Timestamps
     createdAt: {
       type: DataTypes.DATE,
-      allowNull: false,
       defaultValue: DataTypes.NOW,
     },
     updatedAt: {
       type: DataTypes.DATE,
-      allowNull: false,
       defaultValue: DataTypes.NOW,
     },
   });

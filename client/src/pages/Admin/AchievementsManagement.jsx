@@ -1,3 +1,5 @@
+// src/admin/pages/AchievementsManagement.jsx
+
 import { useState, useEffect } from 'react';
 import { adminAPI } from '../../lib/api.js';
 
@@ -7,15 +9,18 @@ const AchievementsManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingAchievement, setEditingAchievement] = useState(null);
 
-  const [formData, setFormData] = useState({
+  const [filter, setFilter] = useState("all"); // 🔥 NEW FILTER
+
+  const EMPTY_FORM = {
     title: '',
-    category: 'student', // ✅ NEW
+    category: 'student',
     students: '',
     description: '',
     link: '',
     isPublished: true,
-  });
+  };
 
+  const [formData, setFormData] = useState(EMPTY_FORM);
   const [imageFile, setImageFile] = useState(null);
 
   useEffect(() => {
@@ -25,72 +30,63 @@ const AchievementsManagement = () => {
   const fetchAchievements = async () => {
     try {
       const response = await adminAPI.getAchievements();
-      setAchievements(response.data.data);
+      setAchievements(response.data.data || []);
     } catch (error) {
-      console.error('Error fetching achievements:', error);
+      console.error(error);
       alert('Failed to fetch achievements');
     } finally {
       setLoading(false);
     }
   };
 
+  const filteredAchievements =
+    filter === "all"
+      ? achievements
+      : achievements.filter(a => a.category === filter);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const data = new FormData();
 
-    // ✅ FIX: append everything except undefined / null
-    Object.entries(formData).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        data.append(key, value);
-      }
+    Object.entries(formData).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) data.append(k, v);
     });
 
-    if (imageFile) {
-      data.append('image', imageFile);
+    if (imageFile) data.append('image', imageFile);
+
+    if (editingAchievement) {
+      await adminAPI.updateAchievement(editingAchievement.id, data);
+    } else {
+      await adminAPI.createAchievement(data);
     }
 
-    try {
-      if (editingAchievement) {
-        await adminAPI.updateAchievement(editingAchievement.id, data);
-        alert('Achievement updated successfully!');
-      } else {
-        await adminAPI.createAchievement(data);
-        alert('Achievement created successfully!');
-      }
-      fetchAchievements();
-      closeModal();
-    } catch (error) {
-      console.error('Error saving achievement:', error);
-      alert(
-        'Failed to save achievement: ' +
-          (error.response?.data?.error || error.message)
-      );
-    }
+    fetchAchievements();
+    closeModal();
   };
 
-  const openModal = (achievement = null) => {
-    if (achievement) {
-      setEditingAchievement(achievement);
+  const handleDelete = async (id) => {
+    if (!confirm("Delete this achievement?")) return;
+    await adminAPI.deleteAchievement(id);
+    fetchAchievements();
+  };
+
+  const openModal = (a = null) => {
+    if (a) {
+      setEditingAchievement(a);
       setFormData({
-        title: achievement.title,
-        category: achievement.category || 'student',
-        students: achievement.students || '',
-        description: achievement.description || '',
-        link: achievement.link || '',
-        isPublished: achievement.isPublished,
+        title: a.title,
+        category: a.category || 'student',
+        students: a.students || '',
+        description: a.description || '',
+        link: a.link || '',
+        isPublished: a.isPublished,
       });
     } else {
       setEditingAchievement(null);
-      setFormData({
-        title: '',
-        category: 'student',
-        students: '',
-        description: '',
-        link: '',
-        isPublished: true,
-      });
+      setFormData(EMPTY_FORM);
     }
+
     setImageFile(null);
     setShowModal(true);
   };
@@ -98,91 +94,73 @@ const AchievementsManagement = () => {
   const closeModal = () => {
     setShowModal(false);
     setEditingAchievement(null);
-    setFormData({
-      title: '',
-      category: 'student',
-      students: '',
-      description: '',
-      link: '',
-      isPublished: true,
-    });
+    setFormData(EMPTY_FORM);
     setImageFile(null);
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lnmiit-red"></div>
-      </div>
-    );
-  }
+  if (loading) return <div className="text-center py-10">Loading...</div>;
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Achievements
-        </h1>
+
+      {/* HEADER */}
+      <div className="flex justify-between mb-6">
+        <h1 className="text-3xl font-bold">Achievements</h1>
         <button onClick={() => openModal()} className="btn-primary">
           Add Achievement
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium">Title</th>
-              <th className="px-6 py-3 text-left text-xs font-medium">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-medium">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {achievements.map((a) => (
-              <tr key={a.id}>
-                <td className="px-6 py-4">{a.title}</td>
-                <td className="px-6 py-4 capitalize">{a.category}</td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full ${
-                      a.isPublished
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}
-                  >
-                    {a.isPublished ? 'Published' : 'Draft'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 space-x-2">
-                  <button
-                    onClick={() => openModal(a)}
-                    className="text-blue-600 hover:underline"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(a.id)}
-                    className="text-red-600 hover:underline"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* 🔥 FILTER */}
+      <div className="mb-4 flex gap-3">
+        {["all", "student", "faculty"].map(f => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-4 py-1 rounded border ${
+              filter === f ? "bg-red-700 text-white" : ""
+            }`}
+          >
+            {f.toUpperCase()}
+          </button>
+        ))}
       </div>
+
+      {/* TABLE */}
+      <table className="w-full bg-white shadow rounded">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="p-3 text-left">Title</th>
+            <th className="p-3">Category</th>
+            <th className="p-3">Status</th>
+            <th className="p-3">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {filteredAchievements.map(a => (
+            <tr key={a.id} className="border-t">
+              <td className="p-3">{a.title}</td>
+              <td className="p-3 capitalize">{a.category}</td>
+              <td className="p-3">
+                {a.isPublished ? "Published" : "Draft"}
+              </td>
+              <td className="p-3 space-x-2">
+                <button onClick={() => openModal(a)}>Edit</button>
+                <button onClick={() => handleDelete(a.id)}>Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       {/* MODAL */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full">
-            <h2 className="text-2xl font-bold mb-4">
-              {editingAchievement ? 'Edit' : 'Add'} Achievement
-            </h2>
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded w-full max-w-xl">
 
             <form onSubmit={handleSubmit} className="space-y-4">
+
               <input
                 className="input-field"
                 placeholder="Title"
@@ -206,7 +184,7 @@ const AchievementsManagement = () => {
 
               <textarea
                 className="input-field"
-                placeholder="Students / Faculty Names"
+                placeholder="Names"
                 value={formData.students}
                 onChange={(e) =>
                   setFormData({ ...formData, students: e.target.value })
@@ -233,11 +211,10 @@ const AchievementsManagement = () => {
 
               <input
                 type="file"
-                accept="image/*"
                 onChange={(e) => setImageFile(e.target.files[0])}
               />
 
-              <label className="flex items-center gap-2">
+              <label>
                 <input
                   type="checkbox"
                   checked={formData.isPublished}
@@ -252,17 +229,12 @@ const AchievementsManagement = () => {
               </label>
 
               <div className="flex gap-4">
-                <button type="submit" className="btn-primary flex-1">
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="btn-secondary flex-1"
-                >
+                <button className="btn-primary flex-1">Save</button>
+                <button type="button" onClick={closeModal} className="btn-secondary flex-1">
                   Cancel
                 </button>
               </div>
+
             </form>
           </div>
         </div>
@@ -272,4 +244,3 @@ const AchievementsManagement = () => {
 };
 
 export default AchievementsManagement;
-  

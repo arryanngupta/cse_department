@@ -1072,41 +1072,40 @@ export const createResearch = async (req, res, next) => {
       description: body.description || null,
       link: body.link || null,
       display_order: Number(body.display_order) || 0,
+
+      // 🔹 Project fields
+      faculty: body.category === 'Project' ? body.faculty || null : null,
+      pi_co_pi: body.category === 'Project' ? body.pi_co_pi || null : null,
+      funding_agency: body.category === 'Project' ? body.funding_agency || null : null,
+      funding_amount: body.category === 'Project' ? body.funding_amount || null : null,
+      duration: body.category === 'Project' ? body.duration || null : null,
+      status: body.category === 'Project'
+        ? (['Ongoing', 'Completed', 'Proposed', 'In Progress'].includes(body.status)
+          ? body.status
+          : 'Ongoing')
+        : null,
+
+      // 🔹 Publication
+      authors: body.category === 'Publication' ? body.authors || null : null,
+      journal: body.category === 'Publication' ? body.journal || null : null,
+      year: body.category === 'Publication' ? body.year || null : null,
+
+      // 🔹 Patent
+      inventors: body.category === 'Patent' ? body.inventors || null : null,
+      application_no: body.category === 'Patent' ? body.application_no || null : null,
+      patent_status: body.category === 'Patent' ? body.patent_status || null : null,
+
+      // 🔹 Collaboration
+      collaboration_org:
+        body.category === 'Collaboration' ? body.collaboration_org || null : null,
     };
-
-    /* ===== CATEGORY-SPECIFIC FIELDS ONLY ===== */
-
-    if (body.category === 'Publication') {
-      researchData.authors = body.authors || null;
-      researchData.journal = body.journal || null;
-      researchData.year = body.year || null;
-    }
-
-    if (body.category === 'Project') {
-      researchData.faculty = body.faculty || null;
-      researchData.funding_agency = body.funding_agency || null;
-
-      // ✅ ENUM-SAFE STATUS
-      if (['Ongoing', 'In Progress', 'Completed', 'Published'].includes(body.status)) {
-        researchData.status = body.status;
-      }
-    }
-
-    if (body.category === 'Patent') {
-      researchData.inventors = body.inventors || null;
-      researchData.application_no = body.application_no || null;
-      researchData.patent_status = body.patent_status || null;
-    }
-
-    if (body.category === 'Collaboration') {
-      researchData.collaboration_org = body.collaboration_org || null;
-    }
 
     if (req.file) {
       researchData.image_path = req.file.path;
     }
 
     const research = await Research.create(researchData);
+
     res.status(201).json({ data: research });
   } catch (error) {
     console.error("Create research error:", error);
@@ -1119,42 +1118,57 @@ export const createResearch = async (req, res, next) => {
 export const updateResearch = async (req, res, next) => {
   try {
     const research = await Research.findByPk(req.params.id);
-    if (!research) return res.status(404).json({ error: 'Research not found' });
+
+    if (!research) {
+      return res.status(404).json({ error: 'Research not found' });
+    }
 
     const body = req.body;
 
     const updateData = {
       title: body.title,
       category: body.category,
+
       description: body.description || null,
       link: body.link || null,
+      display_order: Number(body.display_order) || 0,
 
-      is_featured: body.is_featured === 'true' || body.is_featured === true,
-      display_order: body.display_order ? Number(body.display_order) : 0,
+      // 🔹 Project
+      faculty: body.category === 'Project' ? body.faculty || null : null,
+      pi_co_pi: body.category === 'Project' ? body.pi_co_pi || null : null,
+      funding_agency: body.category === 'Project' ? body.funding_agency || null : null,
+      funding_amount: body.category === 'Project' ? body.funding_amount || null : null,
+      duration: body.category === 'Project' ? body.duration || null : null,
+      status: body.category === 'Project'
+        ? (['Ongoing', 'Completed', 'Proposed', 'In Progress'].includes(body.status)
+          ? body.status
+          : 'Ongoing')
+        : null,
 
-      authors: body.category === 'Publication' ? body.authors : null,
-      journal: body.category === 'Publication' ? body.journal : null,
-      year: body.category === 'Publication' ? body.year : null,
+      // 🔹 Publication
+      authors: body.category === 'Publication' ? body.authors || null : null,
+      journal: body.category === 'Publication' ? body.journal || null : null,
+      year: body.category === 'Publication' ? body.year || null : null,
 
-      faculty: body.category === 'Project' ? body.faculty : null,
-      funding_agency: body.category === 'Project' ? body.funding_agency : null,
-      status: body.category === 'Project' ? body.status : null,
+      // 🔹 Patent
+      inventors: body.category === 'Patent' ? body.inventors || null : null,
+      application_no: body.category === 'Patent' ? body.application_no || null : null,
+      patent_status: body.category === 'Patent' ? body.patent_status || null : null,
 
-      inventors: body.category === 'Patent' ? body.inventors : null,
-      application_no: body.category === 'Patent' ? body.application_no : null,
-      patent_status: body.category === 'Patent' ? body.patent_status : null,
-
+      // 🔹 Collaboration
       collaboration_org:
-        body.category === 'Collaboration' ? body.collaboration_org : null,
+        body.category === 'Collaboration' ? body.collaboration_org || null : null,
     };
 
     if (req.file) {
-      if (research.image_path)
+      if (research.image_path) {
         await deleteCloudinaryResource(research.image_path, 'image');
+      }
       updateData.image_path = req.file.path;
     }
 
     await research.update(updateData);
+
     res.json({ data: research });
   } catch (error) {
     console.error("Update research error:", error);
@@ -1166,11 +1180,21 @@ export const updateResearch = async (req, res, next) => {
 export const deleteResearch = async (req, res, next) => {
   try {
     const research = await Research.findByPk(req.params.id);
-    if (!research) return res.status(404).json({ error: 'Research not found' });
-    if (research.image_path) await deleteCloudinaryResource(research.image_path, 'image');
+
+    if (!research) {
+      return res.status(404).json({ error: 'Research not found' });
+    }
+
+    if (research.image_path) {
+      await deleteCloudinaryResource(research.image_path, 'image');
+    }
+
     await research.destroy();
+
     res.json({ data: { message: 'Research deleted successfully' } });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 /* ==========================

@@ -1,4 +1,5 @@
 // src/pages/Events.jsx
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import EventCard from "../components/EventCard.jsx";
@@ -22,12 +23,13 @@ const Events = () => {
   const fetchEvents = async () => {
     try {
       setLoading(true);
+
       const res = await publicAPI.getEvents({
         page,
         limit,
-        order: "DESC", // latest first
       });
 
+      // 🔥 Already sorted from backend (DESC)
       setEvents(res.data.data || []);
     } catch (err) {
       console.error("Failed to fetch events", err);
@@ -38,64 +40,33 @@ const Events = () => {
 
   if (loading) return <Loading />;
 
-  const today = new Date();
-
-  const upcomingEvents = events.filter(
-    (e) => new Date(e.startsAt) >= today
-  );
-
-  const pastEvents = events.filter(
-    (e) => new Date(e.startsAt) < today
-  );
-
   return (
     <PageWrapper>
       <section className="container mx-auto px-4 py-16">
+
+        {/* ✅ SINGLE HEADING */}
         <SectionHeader title="Events" />
 
-        {/* ================= UPCOMING / LATEST EVENTS ================= */}
-        {upcomingEvents.length > 0 && (
-          <>
-            <h2 className="text-2xl font-semibold mt-10 mb-6 text-[#8B0000]">
-              Upcoming & Latest Events
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {upcomingEvents.map((event) => (
-                <Link
-                  key={event.id}
-                  to={`/events/${event.id}`}
-                  className="block"
-                >
-                  <EventCard event={event} />
-                </Link>
-              ))}
-            </div>
-          </>
+        {/* ✅ ALL EVENTS IN ONE LIST */}
+        {events.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
+            {events.map((event) => (
+              <Link
+                key={event.id}
+                to={`/events/${event.id}`}
+                className="block"
+              >
+                <EventCard event={event} />
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-gray-500 mt-10">
+            No events available.
+          </div>
         )}
 
-        {/* ================= PAST EVENTS ================= */}
-        {pastEvents.length > 0 && (
-          <>
-            <h2 className="text-2xl font-semibold mt-16 mb-6 text-gray-700">
-              Past Events
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 opacity-90">
-              {pastEvents.map((event) => (
-                <Link
-                  key={event.id}
-                  to={`/events/${event.id}`}
-                  className="block"
-                >
-                  <EventCard event={event} />
-                </Link>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* ================= PAGINATION ================= */}
+        {/* PAGINATION */}
         <div className="flex justify-center items-center gap-4 mt-16">
           <button
             disabled={page === 1}
@@ -116,6 +87,7 @@ const Events = () => {
             Next
           </button>
         </div>
+
       </section>
     </PageWrapper>
   );
