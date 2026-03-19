@@ -1,6 +1,7 @@
 // src/pages/Achievements.jsx
 
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom"; // ✅ ADDED
 import { motion } from "framer-motion";
 import AchievementCard from "../components/AchievementCard.jsx";
 import Loading from "../components/Loading.jsx";
@@ -9,10 +10,26 @@ import PageWrapper from "../components/common/PageWrapper.jsx";
 import { publicAPI } from "../lib/api.js";
 
 const Achievements = () => {
-  const [category, setCategory] = useState("student"); // ✅ DEFAULT
+  const location = useLocation();        // ✅ NEW
+  const navigate = useNavigate();        // ✅ NEW
+
+  const [category, setCategory] = useState("student"); // DEFAULT
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // ✅ SYNC CATEGORY FROM URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const cat = params.get("category");
+
+    if (cat === "student" || cat === "faculty") {
+      setCategory(cat);
+    } else {
+      setCategory("student"); // fallback
+    }
+  }, [location.search]);
+
+  // EXISTING FETCH (UNCHANGED)
   useEffect(() => {
     fetchAchievements();
   }, [category]);
@@ -41,7 +58,10 @@ const Achievements = () => {
           {["student", "faculty"].map((cat) => (
             <button
               key={cat}
-              onClick={() => setCategory(cat)}
+              onClick={() => {
+                setCategory(cat); // keep your logic
+                navigate(`/achievements?category=${cat}`); // ✅ URL SYNC
+              }}
               className={`px-6 py-2 rounded-full border text-sm font-medium transition-all
                 ${
                   category === cat
@@ -49,7 +69,9 @@ const Achievements = () => {
                     : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
                 }`}
             >
-              {cat === "student" ? "Student Achievements" : "Faculty Achievements"}
+              {cat === "student"
+                ? "Student Achievements"
+                : "Faculty Achievements"}
             </button>
           ))}
         </div>

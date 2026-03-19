@@ -91,7 +91,10 @@ const Navbar = () => {
       path: "/facilities",
       dropdown: [
         { label: "Laboratories", path: "/facilities?category=Laboratory" },
-        { label: "Infrastructure", path: "/facilities?category=Infrastructure" },
+        {
+          label: "Infrastructure",
+          path: "/facilities?category=Infrastructure",
+        },
         { label: "Equipment", path: "/facilities?category=Equipment" },
         { label: "Software", path: "/facilities?category=Software" },
       ],
@@ -111,8 +114,14 @@ const Navbar = () => {
         {
           label: "Achievements",
           dropdown: [
-            { label: "Student Achievements", path: "/achievements/students" },
-            { label: "Faculty Achievements", path: "/achievements/faculty" },
+            {
+              label: "Student Achievements",
+              path: "/achievements?category=student",
+            },
+            {
+              label: "Faculty Achievements",
+              path: "/achievements?category=faculty",
+            },
           ],
         },
         { label: "Newsletter", path: "/newsletter" },
@@ -128,7 +137,6 @@ const Navbar = () => {
       <div className="bg-[#8B0000] text-white">
         <div className="container mx-auto px-4 py-2.5">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-6 text-sm">
-
             <div className="flex flex-wrap items-center gap-4">
               <a href="tel:01412688090">0141 268 8090</a>
               <a href="mailto:info.lnmiit@lnmiit.ac.in">
@@ -143,7 +151,6 @@ const Navbar = () => {
               <FaTwitter />
               <FaLinkedinIn />
             </div>
-
           </div>
         </div>
       </div>
@@ -168,15 +175,13 @@ const Navbar = () => {
 
           {/* Desktop Menu */}
           <div className="hidden lg:flex items-center gap-2 relative">
-
             {navLinks.map(({ id, path, label, dropdown }) => (
               <div
                 key={id}
-                className="relative"
+                className="relative group"
                 onMouseEnter={() => setActiveDropdown(id)}
                 onMouseLeave={() => setActiveDropdown(null)}
               >
-
                 <Link
                   to={path || "#"}
                   onClick={(e) => dropdown && e.preventDefault()}
@@ -198,14 +203,37 @@ const Navbar = () => {
                       exit={{ opacity: 0, y: -6 }}
                       className="absolute top-full mt-2 w-56 bg-white border rounded-xl shadow-lg z-50"
                     >
-                      {dropdown.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#8B0000]/10 hover:text-[#8B0000]"
-                        >
-                          {item.label}
-                        </Link>
+                      {dropdown.map((item, index) => (
+                        <div key={index} className="relative group/item">
+
+                          {item.path ? (
+                            <Link
+                              to={item.path}
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#8B0000]/10 hover:text-[#8B0000]"
+                            >
+                              {item.label}
+                            </Link>
+                          ) : (
+                            <div className="px-4 py-2 text-sm font-medium text-gray-700 cursor-default">
+                              {item.label}
+                            </div>
+                          )}
+
+                          {item.dropdown && (
+                            <div className="absolute left-full top-0 hidden group-hover/item:block w-56 bg-white border rounded-xl shadow-lg">
+                              {item.dropdown.map((sub, i) => (
+                                <Link
+                                  key={i}
+                                  to={sub.path}
+                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#8B0000]/10 hover:text-[#8B0000]"
+                                >
+                                  {sub.label}
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+
+                        </div>
                       ))}
                     </motion.div>
                   )}
@@ -213,7 +241,6 @@ const Navbar = () => {
 
               </div>
             ))}
-
           </div>
 
           {/* Logo */}
@@ -221,66 +248,70 @@ const Navbar = () => {
             <img src={logo} alt="LNMIIT Logo" className="h-14" />
           </Link>
 
-          {/* Hamburger Button */}
+          {/* Hamburger */}
           <button
-            className="lg:hidden text-2xl text-gray-700"
+            className="lg:hidden text-2xl"
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <FaTimes /> : <FaBars />}
           </button>
-
         </div>
 
         {/* Mobile Menu */}
         <AnimatePresence>
           {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="lg:hidden bg-white border-t shadow-lg"
-            >
-
+            <motion.div className="lg:hidden bg-white border-t shadow-lg">
               {navLinks.map((item) => (
-
                 <div key={item.id} className="border-b">
 
                   <button
                     onClick={() => toggleDropdown(item.id)}
-                    className="w-full flex justify-between items-center px-6 py-4 text-left font-medium text-gray-700 hover:bg-red-50"
+                    className="w-full px-6 py-4 flex justify-between"
                   >
                     {item.label}
-
-                    {item.dropdown && (
-                      <FaChevronDown
-                        className={`transition-transform ${
-                          openDropdown === item.id ? "rotate-180" : ""
-                        }`}
-                      />
-                    )}
+                    {item.dropdown && <FaChevronDown />}
                   </button>
 
                   {item.dropdown && openDropdown === item.id && (
                     <div className="bg-gray-50">
 
-                      {item.dropdown.map((sub) => (
-                        <Link
-                          key={sub.path}
-                          to={sub.path}
-                          className="block px-10 py-3 text-sm text-gray-700 hover:bg-red-100"
-                          onClick={() => setIsOpen(false)}
-                        >
-                          {sub.label}
-                        </Link>
+                      {item.dropdown.map((sub, i) => (
+                        <div key={i}>
+
+                          {sub.path ? (
+                            <Link
+                              to={sub.path}
+                              className="block px-10 py-3"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              {sub.label}
+                            </Link>
+                          ) : (
+                            <div className="px-10 py-3 font-medium">
+                              {sub.label}
+                            </div>
+                          )}
+
+                          {sub.dropdown &&
+                            sub.dropdown.map((nested, j) => (
+                              <Link
+                                key={j}
+                                to={nested.path}
+                                className="block px-14 py-2 text-sm"
+                                onClick={() => setIsOpen(false)}
+                              >
+                                {nested.label}
+                              </Link>
+                            ))}
+
+                        </div>
                       ))}
 
                     </div>
                   )}
 
                 </div>
-
               ))}
-
             </motion.div>
           )}
         </AnimatePresence>
