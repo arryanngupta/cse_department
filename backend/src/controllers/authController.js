@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { User } from '../db/models/index.js';
+import { User, People } from '../db/models/index.js';
 
 export const login = async (req, res, next) => {
   try {
@@ -19,8 +19,19 @@ export const login = async (req, res, next) => {
       });
     }
 
+    const facultyProfile = await People.findOne({
+      where: { user_id: user.id },
+      attributes: ['id', 'slug', 'name', 'designation', 'department']
+    });
+
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        facultyProfileId: facultyProfile?.id || null,
+        mustChangePassword: !!user.must_change_password
+      },
       process.env.JWT_SECRET || 'your-secret-key-change-in-production',
       { expiresIn: '24h' }
     );
@@ -32,7 +43,10 @@ export const login = async (req, res, next) => {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role
+          role: user.role,
+          mustChangePassword: !!user.must_change_password,
+          facultyProfileId: facultyProfile?.id || null,
+          facultyProfile: facultyProfile || null
         }
       }
     });
@@ -43,13 +57,50 @@ export const login = async (req, res, next) => {
 
 export const getMe = async (req, res, next) => {
   try {
+    const facultyProfile = await People.findOne({
+      where: { user_id: req.user.id },
+      attributes: ['id', 'slug', 'name', 'designation', 'department']
+    });
+
     res.json({
       data: {
         id: req.user.id,
         name: req.user.name,
         email: req.user.email,
-        role: req.user.role
+        role: req.user.role,
+        mustChangePassword: !!req.user.must_change_password,
+        facultyProfileId: facultyProfile?.id || null,
+        facultyProfile: facultyProfile || null
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const changePassword = async (req, res, next) => {
+  try {
+    const { password } = req.body;
+
+    if (!password || password.trim().length < 6) {
+      return res.status(400).json({
+        error: 'Password must be at least 6 characters long'
+      });
+    }
+
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    await user.update({
+      password_hash: password,
+      must_change_password: false
+    });
+
+    res.json({
+      success: true,
+      message: 'Password updated successfully'
     });
   } catch (error) {
     next(error);

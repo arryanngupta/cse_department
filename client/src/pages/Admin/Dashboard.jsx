@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { adminAPI } from '../../lib/api.js';
+import { adminAPI, authAPI } from '../../lib/api.js';
 
 const Dashboard = () => {
+  const [user, setUser] = useState(null);
   const [stats, setStats] = useState({
     sliders: 0,
     people: 0,
@@ -16,9 +17,37 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const res = await authAPI.getMe();
+        setUser(res.data.data);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [sliders, people, programs, news, events, achievements, newsletters, directory] = await Promise.all([
+        // Faculty should not call admin-only stats APIs.
+        if (user?.role === 'faculty') {
+          setLoading(false);
+          return;
+        }
+
+        const [
+          sliders,
+          people,
+          programs,
+          news,
+          events,
+          achievements,
+          newsletters,
+          directory
+        ] = await Promise.all([
           adminAPI.getSliders(),
           adminAPI.getPeople(),
           adminAPI.getPrograms(),
@@ -46,8 +75,52 @@ const Dashboard = () => {
       }
     };
 
-    fetchStats();
-  }, []);
+    if (user) fetchStats();
+  }, [user]);
+
+  // Faculty dashboard
+  if (user?.role === 'faculty') {
+    return (
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Faculty Portal</h1>
+        <p className="text-gray-600 mb-8">
+          Welcome, {user.name}. You can edit your own faculty profile here.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Link
+            to={`/admin/people/${user.facultyProfileId}`}
+            className="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow"
+          >
+            <div className="text-3xl mb-3">👤</div>
+            <h3 className="text-lg font-semibold text-gray-700">Edit My Profile</h3>
+            <p className="text-sm text-gray-500 mt-2">
+              Update personal, academic, and research information.
+            </p>
+          </Link>
+
+          <Link
+            to={`/people/${user.facultyProfile?.slug || ''}`}
+            className="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow"
+          >
+            <div className="text-3xl mb-3">🔎</div>
+            <h3 className="text-lg font-semibold text-gray-700">View Public Profile</h3>
+            <p className="text-sm text-gray-500 mt-2">
+              See how your profile appears on the public site.
+            </p>
+          </Link>
+
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="text-3xl mb-3">📚</div>
+            <h3 className="text-lg font-semibold text-gray-700">Profile Sections</h3>
+            <p className="text-sm text-gray-500 mt-2">
+              Add summary, biography, education, publications, workshops, and research areas.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const cards = [
     { title: 'Hero Sliders', count: stats.sliders, icon: '🖼️', link: '/admin/sliders', color: 'bg-blue-500' },
@@ -57,7 +130,8 @@ const Dashboard = () => {
     { title: 'Events', count: stats.events, icon: '📅', link: '/admin/events', color: 'bg-red-500' },
     { title: 'Achievements', count: stats.achievements, icon: '🏆', link: '/admin/achievements', color: 'bg-indigo-500' },
     { title: 'Newsletters', count: stats.newsletters, icon: '📄', link: '/admin/newsletters', color: 'bg-pink-500' },
-    { title: 'Directory Entries', count: stats.directory, icon: '📞', link: '/admin/directory', color: 'bg-teal-500' }
+    { title: 'Directory Entries', count: stats.directory, icon: '📞', link: '/admin/directory', color: 'bg-teal-500' },
+    { title: 'Opportunities', count: 0, icon: '💼', link: '/admin/opportunities', color: 'bg-slate-500' },
   ];
 
   return (

@@ -137,7 +137,7 @@ const Home = () => {
           </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {news.map((item) => (
+          {news.slice(0, 3).map((item) => (
             <NewsCard key={item.id} news={item} />
           ))}
         </div>
@@ -147,14 +147,14 @@ const Home = () => {
       <section className="bg-gray-50 py-20">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-8">
-            <SectionHeader title="Upcoming Events" />
+            <SectionHeader title="Events" />
             <Link to="/events" className="text-[#A6192E] hover:underline">
               View All →
             </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {events.map((event) => (
+            {events.slice(0, 3).map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
           </div>
@@ -171,7 +171,7 @@ const Home = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {achievements.map((achievement) => (
+          {events.slice(0, 3).map((achievement) => (
             <AchievementCard key={achievement.id} achievement={achievement} />
           ))}
         </div>

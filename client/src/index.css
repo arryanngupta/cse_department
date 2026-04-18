@@ -1,1 +1,33 @@
 @import "tailwindcss";
+
+/* 🔥 Kill Google translate top bar */
+body > .skiptranslate {
+  display: none !important;
+}
+
+/* 🔥 Kill iframe if present */
+iframe.goog-te-banner-frame {
+  display: none !important;
+  height: 0 !important;
+}
+
+/* 🔥 Remove spacing */
+body {
+  top: 0px !important;
+}
+
+/* 🔥 Remove html margin */
+html {
+  margin-top: 0px !important;
+}
+
+/* 🔥 Hide gadget */
+.goog-te-gadget {
+  display: none !important;
+}
+
+/* 🔥 Remove highlight */
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
+}

@@ -1,12 +1,12 @@
 import { DataTypes } from 'sequelize';
 
-export const up = async (queryInterface) => {
+export async function up(queryInterface) {
   await queryInterface.createTable('facilities', {
     id: {
       type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
       allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
     },
     name: {
       type: DataTypes.STRING(255),
@@ -30,7 +30,7 @@ export const up = async (queryInterface) => {
       allowNull: true,
     },
     capacity: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.STRING(255),
       allowNull: true,
     },
     in_charge: {
@@ -38,7 +38,7 @@ export const up = async (queryInterface) => {
       allowNull: true,
     },
     image_path: {
-      type: DataTypes.STRING(500),
+      type: DataTypes.STRING(255),
       allowNull: true,
     },
     gallery_images: {
@@ -47,31 +47,27 @@ export const up = async (queryInterface) => {
     },
     display_order: {
       type: DataTypes.INTEGER,
+      allowNull: true,
       defaultValue: 0,
     },
     is_active: {
       type: DataTypes.BOOLEAN,
+      allowNull: true,
       defaultValue: true,
     },
-
-    // ✅ timestamps (required by Sequelize)
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: queryInterface.sequelize.literal('CURRENT_TIMESTAMP'),
     },
     updatedAt: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: queryInterface.sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
     },
   });
+}
 
-  // Optional indexes for performance
-  // await queryInterface.addIndex('facilities', ['category']);
-  // await queryInterface.addIndex('facilities', ['is_active']);
-};
-
-export const down = async (queryInterface) => {
+export async function down(queryInterface) {
+  await queryInterface.sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
   await queryInterface.dropTable('facilities');
-};
+  await queryInterface.sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+}

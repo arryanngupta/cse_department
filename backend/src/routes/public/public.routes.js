@@ -12,13 +12,16 @@ import {
   getEvents,
   getEventById,
   getAchievements,
+  getAchievementById,
   getNewsletters,
   getDirectory,
   getInfoBlock,
   getResearch,
   getResearchById,
   getFacilities,
-  getFacilityById
+  getFacilityById,
+  getOpportunities, 
+  getOpportunityById
 } from '../../controllers/publicController.js';
 
 // 👉 IMPORT MODELS FOR SITEMAP
@@ -40,6 +43,7 @@ router.get('/news/:id', getNewsById);
 router.get('/events', getEvents);
 router.get('/events/:id', getEventById);
 router.get('/achievements', getAchievements);
+router.get('/achievements/:id', getAchievementById);
 router.get('/newsletters', getNewsletters);
 router.get('/directory', getDirectory);
 router.get('/info/:key', getInfoBlock);
@@ -47,6 +51,8 @@ router.get('/research', getResearch);
 router.get('/research/:id', getResearchById);
 router.get('/facilities', getFacilities);
 router.get('/facilities/:id', getFacilityById);
+router.get('/opportunities', getOpportunities);
+router.get('/opportunities/:id', getOpportunityById);
 
 /* =========================
    🔥 SEO SITEMAP ROUTE

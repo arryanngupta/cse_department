@@ -1,11 +1,14 @@
 // src/components/EventCard.jsx
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const EventCard = ({ event }) => {
+    const navigate = useNavigate();
   return (
     <motion.div
       whileHover={{ y: -4 }}
       className="bg-white rounded-xl shadow-md hover:shadow-xl transition overflow-hidden h-full"
+      onClick={() => navigate(`/events/${event.id}`)}
     >
       {event.banner_path && (
         <img

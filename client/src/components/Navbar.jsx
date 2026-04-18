@@ -39,6 +39,17 @@ const Navbar = () => {
     setOpenDropdown(openDropdown === id ? null : id);
   };
 
+  const changeLanguage = (lang) => {
+    const select = document.querySelector(".goog-te-combo");
+
+    if (select) {
+      select.value = lang;
+      select.dispatchEvent(new Event("change"));
+    } else {
+      console.log("Translator not ready yet");
+    }
+  };
+
   const navLinks = [
     { id: "home", label: "Home", path: "/" },
 
@@ -144,12 +155,31 @@ const Navbar = () => {
               </a>
             </div>
 
-            <div className="flex gap-4 text-lg">
+            <div className="flex items-center gap-4 text-lg">
               <FaInstagram />
               <FaYoutube />
               <FaFacebookF />
               <FaTwitter />
               <FaLinkedinIn />
+
+              {/* Language Toggle */}
+              <div className="ml-4 text-sm font-medium flex gap-2">
+                <span
+                  onClick={() => changeLanguage("en")}
+                  className="cursor-pointer hover:underline"
+                >
+                  English
+                </span>
+
+                <span>|</span>
+
+                <span
+                  onClick={() => changeLanguage("hi")}
+                  className="cursor-pointer hover:underline"
+                >
+                  हिन्दी
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -162,7 +192,6 @@ const Navbar = () => {
         }`}
       >
         <div className="flex justify-between items-center py-3 lg:py-4 px-6">
-
           {/* Title */}
           <div className="hidden sm:block">
             <div className="text-[#8B0000] font-bold text-lg">
@@ -205,7 +234,6 @@ const Navbar = () => {
                     >
                       {dropdown.map((item, index) => (
                         <div key={index} className="relative group/item">
-
                           {item.path ? (
                             <Link
                               to={item.path}
@@ -232,13 +260,11 @@ const Navbar = () => {
                               ))}
                             </div>
                           )}
-
                         </div>
                       ))}
                     </motion.div>
                   )}
                 </AnimatePresence>
-
               </div>
             ))}
           </div>
@@ -263,7 +289,6 @@ const Navbar = () => {
             <motion.div className="lg:hidden bg-white border-t shadow-lg">
               {navLinks.map((item) => (
                 <div key={item.id} className="border-b">
-
                   <button
                     onClick={() => toggleDropdown(item.id)}
                     className="w-full px-6 py-4 flex justify-between"
@@ -274,10 +299,8 @@ const Navbar = () => {
 
                   {item.dropdown && openDropdown === item.id && (
                     <div className="bg-gray-50">
-
                       {item.dropdown.map((sub, i) => (
                         <div key={i}>
-
                           {sub.path ? (
                             <Link
                               to={sub.path}
@@ -303,19 +326,15 @@ const Navbar = () => {
                                 {nested.label}
                               </Link>
                             ))}
-
                         </div>
                       ))}
-
                     </div>
                   )}
-
                 </div>
               ))}
             </motion.div>
           )}
         </AnimatePresence>
-
       </nav>
     </>
   );

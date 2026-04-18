@@ -1,6 +1,8 @@
 // backend/src/controllers/adminController.js
+import crypto from 'crypto';
 import {
   Slider,
+  User,
   People,
   Program,
   News,
@@ -15,7 +17,8 @@ import {
   CurriculumSemester,
   CurriculumCourse,
   ProgramOutcome,
-  SectionContent
+  SectionContent,
+  Opportunity
 } from '../db/models/index.js';
 import { Op } from "sequelize";
 import { generateSlug } from '../utils/slugUtils.js';
@@ -30,8 +33,8 @@ import cloudinary from '../config/cloudinary.js'; // default export from cloudin
    SAFE JSON PARSER (ADMIN)
    ========================== */
 
-const safeJSON = (value, fallback = []) => {
-  if (value === undefined) return fallback; // 👈 undefined ONLY
+const safeJSON = (value, fallback = null) => {
+  if (value === undefined) return fallback;
 
   if (typeof value === "object") return value;
 
@@ -39,8 +42,7 @@ const safeJSON = (value, fallback = []) => {
     if (value.trim() === "") return fallback;
 
     try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : fallback;
+      return JSON.parse(value); // ✅ supports object + array
     } catch {
       return fallback;
     }
@@ -176,6 +178,76 @@ export const getAllPeople = async (req, res, next) => {
   }
 };
 
+export const createFacultyLogin = async (req, res, next) => {
+  try {
+    const { personId } = req.params;
+
+    const person = await People.findByPk(personId);
+
+    if (!person) {
+      return res.status(404).json({ error: 'Faculty member not found' });
+    }
+
+    if (!person.email) {
+      return res.status(400).json({
+        error: 'Faculty email is required to generate login'
+      });
+    }
+
+    // Generate a temporary password
+    const tempPassword = crypto.randomBytes(4).toString('hex');
+
+    // Find existing user by email if any
+    let user = await User.findOne({
+      where: { email: person.email }
+    });
+
+    if (user) {
+      // If another faculty is already linked to this user, stop
+      const linkedPerson = await People.findOne({
+        where: { user_id: user.id }
+      });
+
+      if (linkedPerson && linkedPerson.id !== person.id) {
+        return res.status(400).json({
+          error: 'This email is already linked to another faculty profile'
+        });
+      }
+
+      await user.update({
+        name: person.name,
+        role: 'faculty',
+        password_hash: tempPassword,
+        must_change_password: true
+      });
+    } else {
+      user = await User.create({
+        name: person.name,
+        email: person.email,
+        password_hash: tempPassword,
+        role: 'faculty',
+        must_change_password: true
+      });
+    }
+
+    await person.update({
+      user_id: user.id
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Faculty login generated successfully',
+      data: {
+        userId: user.id,
+        email: user.email,
+        tempPassword
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createPerson = async (req, res, next) => {
   try {
     const {
@@ -269,8 +341,10 @@ export const updatePerson = async (req, res, next) => {
     if (name !== undefined) {
       updateData.name = name;
 
-      if (name !== person.name) {
+      // FIX: also handle NULL slug case
+      if (!person.slug || name !== person.name) {
         let newSlug = generateSlug(name);
+
         let exists = await People.findOne({
           where: { slug: newSlug, id: { [Op.ne]: id } }
         });
@@ -1073,7 +1147,7 @@ export const createResearch = async (req, res, next) => {
       link: body.link || null,
       display_order: Number(body.display_order) || 0,
 
-      // 🔹 Project fields
+      // Project
       faculty: body.category === 'Project' ? body.faculty || null : null,
       pi_co_pi: body.category === 'Project' ? body.pi_co_pi || null : null,
       funding_agency: body.category === 'Project' ? body.funding_agency || null : null,
@@ -1085,20 +1159,33 @@ export const createResearch = async (req, res, next) => {
           : 'Ongoing')
         : null,
 
-      // 🔹 Publication
+      // Publication
       authors: body.category === 'Publication' ? body.authors || null : null,
       journal: body.category === 'Publication' ? body.journal || null : null,
       year: body.category === 'Publication' ? body.year || null : null,
 
-      // 🔹 Patent
+      // Patent
       inventors: body.category === 'Patent' ? body.inventors || null : null,
       application_no: body.category === 'Patent' ? body.application_no || null : null,
       patent_status: body.category === 'Patent' ? body.patent_status || null : null,
 
-      // 🔹 Collaboration
+      // Collaboration
       collaboration_org:
         body.category === 'Collaboration' ? body.collaboration_org || null : null,
     };
+
+    // ✅ content_json (SAFE)
+    if (body.content_json) {
+      try {
+        researchData.content_json = JSON.stringify(
+          typeof body.content_json === "string"
+            ? JSON.parse(body.content_json)
+            : body.content_json
+        );
+      } catch {
+        researchData.content_json = body.content_json;
+      }
+    }
 
     if (req.file) {
       researchData.image_path = req.file.path;
@@ -1107,6 +1194,7 @@ export const createResearch = async (req, res, next) => {
     const research = await Research.create(researchData);
 
     res.status(201).json({ data: research });
+
   } catch (error) {
     console.error("Create research error:", error);
     next(error);
@@ -1125,41 +1213,29 @@ export const updateResearch = async (req, res, next) => {
 
     const body = req.body;
 
-    const updateData = {
-      title: body.title,
-      category: body.category,
+    const updateData = {};
 
-      description: body.description || null,
-      link: body.link || null,
-      display_order: Number(body.display_order) || 0,
+    // only update what is provided
+    Object.keys(body).forEach(key => {
+      if (body[key] !== undefined && body[key] !== "") {
+        updateData[key] = body[key];
+      }
+    });
 
-      // 🔹 Project
-      faculty: body.category === 'Project' ? body.faculty || null : null,
-      pi_co_pi: body.category === 'Project' ? body.pi_co_pi || null : null,
-      funding_agency: body.category === 'Project' ? body.funding_agency || null : null,
-      funding_amount: body.category === 'Project' ? body.funding_amount || null : null,
-      duration: body.category === 'Project' ? body.duration || null : null,
-      status: body.category === 'Project'
-        ? (['Ongoing', 'Completed', 'Proposed', 'In Progress'].includes(body.status)
-          ? body.status
-          : 'Ongoing')
-        : null,
+    // handle JSON
+    if (body.content_json) {
+      try {
+        updateData.content_json = JSON.stringify(
+          typeof body.content_json === "string"
+            ? JSON.parse(body.content_json)
+            : body.content_json
+        );
+      } catch {
+        updateData.content_json = body.content_json;
+      }
+    }
 
-      // 🔹 Publication
-      authors: body.category === 'Publication' ? body.authors || null : null,
-      journal: body.category === 'Publication' ? body.journal || null : null,
-      year: body.category === 'Publication' ? body.year || null : null,
-
-      // 🔹 Patent
-      inventors: body.category === 'Patent' ? body.inventors || null : null,
-      application_no: body.category === 'Patent' ? body.application_no || null : null,
-      patent_status: body.category === 'Patent' ? body.patent_status || null : null,
-
-      // 🔹 Collaboration
-      collaboration_org:
-        body.category === 'Collaboration' ? body.collaboration_org || null : null,
-    };
-
+    // image update
     if (req.file) {
       if (research.image_path) {
         await deleteCloudinaryResource(research.image_path, 'image');
@@ -1170,6 +1246,7 @@ export const updateResearch = async (req, res, next) => {
     await research.update(updateData);
 
     res.json({ data: research });
+
   } catch (error) {
     console.error("Update research error:", error);
     next(error);
@@ -1238,4 +1315,88 @@ export const deleteFacility = async (req, res, next) => {
     await facility.destroy();
     res.json({ data: { message: 'Facility deleted successfully' } });
   } catch (error) { next(error); }
+};
+
+
+// Opportunity
+export const getAllOpportunities = async (req, res, next) => {
+  try {
+    const items = await Opportunity.findAll({
+      order: [['page_group', 'ASC'], ['display_order', 'ASC'], ['id', 'DESC']],
+    });
+
+    res.json({ data: items });
+  } catch (error) {
+    console.error('❌ GET Opportunities Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const createOpportunity = async (req, res, next) => {
+  try {
+    const item = await Opportunity.create({
+      title: req.body.title,
+      page_group: req.body.page_group || 'general',
+      block_type: req.body.block_type || 'rich_text',
+      subtitle: req.body.subtitle || null,
+      description: req.body.description || null,
+      image_path: req.file?.path || req.body.image_path || null,
+      cta_text: req.body.cta_text || null,
+      cta_url: req.body.cta_url || null,
+      content_html: req.body.content_html || null,
+      content_json: safeJSON(req.body.content_json, null),
+      display_order: Number(req.body.display_order || 0),
+      is_active: parseBool(req.body.is_active) ?? true,
+    });
+
+    res.status(201).json({ data: item });
+  } catch (error) {
+    console.error('❌ CREATE Opportunity Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const updateOpportunity = async (req, res, next) => {
+  try {
+    const item = await Opportunity.findByPk(req.params.id);
+    if (!item) return res.status(404).json({ error: 'Opportunity not found' });
+
+    await item.update({
+      title: req.body.title ?? item.title,
+      page_group: req.body.page_group ?? item.page_group,
+      block_type: req.body.block_type ?? item.block_type,
+      subtitle: req.body.subtitle ?? item.subtitle,
+      description: req.body.description ?? item.description,
+      image_path: req.file?.path || req.body.image_path || item.image_path,
+      cta_text: req.body.cta_text ?? item.cta_text,
+      cta_url: req.body.cta_url ?? item.cta_url,
+      content_html: req.body.content_html ?? item.content_html,
+      content_json: req.body.content_json
+        ? safeJSON(req.body.content_json, item.content_json)
+        : item.content_json,
+      display_order:
+        req.body.display_order !== undefined
+          ? Number(req.body.display_order)
+          : item.display_order,
+      is_active: parseBool(req.body.is_active) ?? item.is_active,
+    });
+
+    res.json({ data: item });
+  } catch (error) {
+    console.error('❌ UPDATE Opportunity Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const deleteOpportunity = async (req, res, next) => {
+  try {
+    const item = await Opportunity.findByPk(req.params.id);
+    if (!item) return res.status(404).json({ error: 'Opportunity not found' });
+
+    await item.destroy();
+    res.json({ message: 'Opportunity deleted successfully' });
+  } catch (error) {
+    console.error('❌ DELETE Opportunity Error:', error);
+    res.status(500).json({ error: error.message });
+  }
 };

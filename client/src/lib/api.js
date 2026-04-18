@@ -33,7 +33,7 @@ api.interceptors.response.use(
     if (error?.response?.status === 401) {
       try {
         localStorage.removeItem('token');
-      } catch (e) {}
+      } catch (e) { }
       if (!window.location.pathname.includes('/admin/login')) {
         window.location.href = '/admin/login';
       }
@@ -48,6 +48,7 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   getMe: () => api.get('/auth/me'),
+  changePassword: (password) => api.post('/auth/change-password', { password }),
 };
 
 // ========================
@@ -78,6 +79,13 @@ export const publicAPI = {
 
   getResearch: (params) => api.get('/public/research', { params }),
   getFacilities: (params) => api.get('/public/facilities', { params }),
+
+  // Opportunity
+  getOpportunities: (params) => api.get('/public/opportunities', { params }),
+  getOpportunityById: (id) => api.get(`/public/opportunities/${id}`),
+
+  getFacilityById: (id) => api.get(`/public/facilities/${id}`),
+  getAchievementById: (id) => api.get(`/public/achievements/${id}`),
 };
 
 
@@ -100,6 +108,7 @@ export const adminAPI = {
   updatePerson: (id, formData) =>
     api.put(`/admin/people/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   deletePerson: (id) => api.delete(`/admin/people/${id}`),
+  createFacultyLogin: (personId) => api.post(`/admin/people/${personId}/create-login`),
 
   // Programs
   getPrograms: () => api.get('/admin/programs'),
@@ -131,9 +140,9 @@ export const adminAPI = {
   saveSectionContent: (data) => api.post(`/admin/programs/sections/content`, data),
   getProgramDetailsAdmin: (programId) => api.get(`/admin/programs/${programId}`),
   uploadEditorImage: (formData) =>
-  api.post('/admin/upload-editor-image', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
+    api.post('/admin/upload-editor-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
   // News
   getNews: () => api.get('/admin/news'),
   createNews: (formData) =>
@@ -195,6 +204,14 @@ export const adminAPI = {
   updateFacility: (id, formData) =>
     api.put(`/admin/facilities/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   deleteFacility: (id) => api.delete(`/admin/facilities/${id}`),
+
+  // Opportunity
+  getOpportunities: () => api.get('/admin/opportunities'),
+  createOpportunity: (formData) =>
+    api.post('/admin/opportunities', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  updateOpportunity: (id, formData) =>
+    api.put(`/admin/opportunities/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  deleteOpportunity: (id) => api.delete(`/admin/opportunities/${id}`),
 };
 
 // default export for existing default-import usages --------------------------------

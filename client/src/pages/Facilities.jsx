@@ -91,6 +91,7 @@ const Facilities = () => {
               {currentItems.map((item) => (
                 <motion.div
                   key={item.id}
+                  to={`/facilities/${item.id}`}
                   className="bg-white rounded-2xl shadow-md border overflow-hidden"
                 >
                   {item.image_path && (

@@ -10,6 +10,12 @@ const People = sequelize.define(
       autoIncrement: true,
     },
 
+    user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      unique: true,
+    },
+
     slug: {
       type: DataTypes.STRING,
       unique: true,
@@ -79,7 +85,6 @@ const People = sequelize.define(
       type: DataTypes.JSON,
     },
 
-    // 🔥 ADD THIS FIELD
     profile_sections: {
       type: DataTypes.JSON,
       allowNull: true,

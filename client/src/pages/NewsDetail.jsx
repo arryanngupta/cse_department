@@ -1,87 +1,57 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import Loading from '../components/Loading.jsx';
-import { publicAPI } from '../lib/api.js';
-import { getImageUrl } from '../utils/imageUtils.js';
+import { useParams } from "react-router-dom";
+import { publicAPI } from "../lib/api.js";
+import useDetailData from "../hooks/useDetailData.js";
+import DetailPage from "../components/DetailPage.jsx";
+import { formatDateTime, getPrimitiveDetails, firstNonEmpty } from "../utils/detailFields.js";
 
-const NewsDetail = () => {
+export default function NewsDetail() {
   const { id } = useParams();
-  const [news, setNews] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { item, loading, error } = useDetailData(publicAPI.getNewsById, id);
 
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const response = await publicAPI.getNewsById(id);
-        setNews(response.data.data);
-      } catch (error) {
-        console.error('Error fetching news:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const title = item?.title || "News";
+  const image = firstNonEmpty(item?.image_path, item?.banner_path);
+  const subtitle = item?.summary || item?.body || "";
 
-    fetchNews();
-  }, [id]);
+  const meta = [
+    { label: "Date", value: formatDateTime(item?.date) },
+    { label: "Published", value: item?.isPublished ? "Yes" : "No" },
+  ];
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  if (loading) return <Loading />;
-
-  if (!news) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">News not found</h1>
-          <Link to="/news" className="text-lnmiit-red hover:underline">
-            ← Back to News
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const additionalFields = getPrimitiveDetails(item, ["date", "isPublished", "summary", "body"]);
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <Link to="/news" className="inline-flex items-center text-lnmiit-red hover:underline mb-8">
-        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        Back to News
-      </Link>
+    <DetailPage
+      item={item}
+      loading={loading}
+      error={error}
+      backTo="/news"
+      backLabel="Back to News"
+      entityName="News"
+      title={title}
+      badge="News"
+      subtitle={subtitle}
+      image={image}
+      imageAlt={title}
+      meta={meta}
+      additionalFields={additionalFields}
+    >
+      {item?.summary && (
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-3">Summary</h2>
+          <p className="text-gray-700 leading-7 whitespace-pre-line">
+            {item.summary}
+          </p>
+        </div>
+      )}
 
-      <article className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">{news.title}</h1>
-       <p className="text-gray-500 mb-8">{formatDate(news.date)}</p>
-
-        {news.image_path && (
-          <img
-            src={getImageUrl(news.image_path)}
-            alt={news.title}
-            className="w-full rounded-lg mb-8"
-          />
-        )}
-
-        {news.summary && (
-          <div className="bg-gray-50 p-6 rounded-lg mb-8">
-            <p className="text-lg text-gray-700">{news.summary}</p>
-          </div>
-        )}
-
-        {news.body && (
-          <div className="prose max-w-none">
-            <p className="text-gray-700 whitespace-pre-wrap">{news.body}</p>
-          </div>
-        )}
-      </article>
-    </div>
+      {item?.body && (
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-3">Full story</h2>
+          <p className="text-gray-700 leading-7 whitespace-pre-line">
+            {item.body}
+          </p>
+        </div>
+      )}
+    </DetailPage>
   );
-};
-
-export default NewsDetail;
+}

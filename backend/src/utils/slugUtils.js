@@ -6,13 +6,14 @@
  */
 export const generateSlug = (name) => {
   if (!name) return '';
+
   return name
     .toLowerCase()
+    .replace(/\b(dr|prof)\.\s*/g, '') // remove titles like Dr. Prof.
+    .replace(/[^\w\s-]/g, '')         // remove special chars
     .trim()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-')      // Replace spaces with hyphens
-    .replace(/-+/g, '-')       // Replace multiple hyphens with single
-    .replace(/^-+|-+$/g, '');  // Remove leading/trailing hyphens
+    .replace(/\s+/g, '-')             
+    .replace(/-+/g, '-');
 };
 
 /**

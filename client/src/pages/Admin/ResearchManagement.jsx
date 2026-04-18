@@ -17,6 +17,9 @@ const EMPTY_FORM = {
   // Project
   faculty: "",
   funding_agency: "",
+  funding_amount: "",
+  duration: "",
+  pi_co_pi: "",
   status: "",
 
   // Patent
@@ -28,6 +31,8 @@ const EMPTY_FORM = {
   collaboration_org: "",
 };
 
+const EMPTY_BLOCKS = () => [];
+
 export default function ResearchManagement() {
   const [researchList, setResearchList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +40,7 @@ export default function ResearchManagement() {
   const [editingResearch, setEditingResearch] = useState(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [imageFile, setImageFile] = useState(null);
+  const [blocks, setBlocks] = useState(EMPTY_BLOCKS());
 
   useEffect(() => {
     fetchResearch();
@@ -52,15 +58,36 @@ export default function ResearchManagement() {
   };
 
   const openModal = (item = null) => {
-    if (item?.category) {
-      setEditingResearch(null);
-      setFormData({ ...EMPTY_FORM, category: item.category });
-    } else if (item) {
+    if (item?.id) {
       setEditingResearch(item);
-      setFormData({ ...EMPTY_FORM, ...item });
+
+      const {
+        id,
+        content_json,
+        createdAt,
+        updatedAt,
+        image_path,
+        ...safeItem
+      } = item || {};
+
+      setFormData({
+        ...EMPTY_FORM,
+        ...safeItem,
+      });
+
+      setBlocks(
+        normalizeBlocks(content_json).map((b) => ({
+          _id: Date.now() + Math.random(),
+          ...b,
+        })),
+      );
     } else {
       setEditingResearch(null);
-      setFormData(EMPTY_FORM);
+      setFormData({
+        ...EMPTY_FORM,
+        ...(item?.category ? { category: item.category } : {}),
+      });
+      setBlocks(EMPTY_BLOCKS());
     }
 
     setImageFile(null);
@@ -70,12 +97,99 @@ export default function ResearchManagement() {
   const closeModal = () => {
     setShowModal(false);
     setEditingResearch(null);
-    setFormData(EMPTY_FORM);
+    setFormData({ ...EMPTY_FORM });
     setImageFile(null);
+    setBlocks(EMPTY_BLOCKS());
   };
 
   const handleChange = (key, value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const addBlock = (type) => {
+    const newBlock = createDefaultBlock(type);
+    setBlocks((prev) => [...prev, newBlock]);
+  };
+
+  const updateBlock = (id, patch) => {
+    setBlocks((prev) =>
+      prev.map((block) =>
+        block._id === id
+          ? { ...block, ...patch }
+          : block,
+      ),
+    );
+  };
+
+  const removeBlock = (id) => {
+    setBlocks((prev) => prev.filter((block) => block._id !== id));
+  };
+
+  const moveBlock = (index, direction) => {
+    setBlocks((prev) => {
+      const next = [...prev];
+      const target = index + direction;
+      if (target < 0 || target >= next.length) return prev;
+
+      const temp = next[index];
+      next[index] = next[target];
+      next[target] = temp;
+
+      return next;
+    });
+  };
+
+  const addAccordionItem = (blockIndex) => {
+    setBlocks((prev) =>
+      prev.map((block, i) =>
+        i === blockIndex
+          ? {
+              ...block,
+              items: [
+                ...(Array.isArray(block.items) ? block.items : []),
+                { heading: "", text: "" },
+              ],
+            }
+          : block,
+      ),
+    );
+  };
+
+  const updateAccordionItem = (blockIndex, itemIndex, patch) => {
+    setBlocks((prev) =>
+      prev.map((block, i) => {
+        if (i !== blockIndex) return block;
+
+        const items = Array.isArray(block.items) ? [...block.items] : [];
+        if (!items[itemIndex]) return block;
+
+        items[itemIndex] = {
+          ...items[itemIndex],
+          ...patch,
+        };
+
+        return {
+          ...block,
+          items,
+        };
+      }),
+    );
+  };
+
+  const removeAccordionItem = (blockIndex, itemIndex) => {
+    setBlocks((prev) =>
+      prev.map((block, i) => {
+        if (i !== blockIndex) return block;
+
+        const items = Array.isArray(block.items) ? [...block.items] : [];
+        items.splice(itemIndex, 1);
+
+        return {
+          ...block,
+          items,
+        };
+      }),
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -86,10 +200,12 @@ export default function ResearchManagement() {
       if (v !== null && v !== "") data.append(k, v);
     });
 
+    data.append("content_json", JSON.stringify(blocks ?? []));
+
     if (imageFile) data.append("image", imageFile);
 
     try {
-      if (editingResearch) {
+      if (editingResearch?.id) {
         await adminAPI.updateResearch(editingResearch.id, data);
         alert("Research updated");
       } else {
@@ -118,30 +234,33 @@ export default function ResearchManagement() {
 
   return (
     <div>
-      // ONLY SHOWING CHANGED TOP PART (rest SAME)
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Research</h1>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <button
+            type="button"
             onClick={() => openModal({ category: "Publication" })}
             className="btn-primary"
           >
             + Publication
           </button>
           <button
+            type="button"
             onClick={() => openModal({ category: "Project" })}
             className="btn-primary"
           >
             + Project
           </button>
           <button
+            type="button"
             onClick={() => openModal({ category: "Patent" })}
             className="btn-primary"
           >
             + Patent
           </button>
           <button
+            type="button"
             onClick={() => openModal({ category: "Collaboration" })}
             className="btn-primary"
           >
@@ -149,6 +268,7 @@ export default function ResearchManagement() {
           </button>
         </div>
       </div>
+
       <table className="w-full bg-white shadow rounded">
         <thead className="bg-gray-100">
           <tr>
@@ -181,10 +301,10 @@ export default function ResearchManagement() {
           ))}
         </tbody>
       </table>
-      {/* ================= MODAL ================= */}
+
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-lg w-full max-w-2xl overflow-y-auto max-h-[90vh]">
+          <div className="bg-white p-8 rounded-lg w-full max-w-4xl overflow-y-auto max-h-[90vh]">
             <h2 className="text-2xl font-bold mb-6">
               {editingResearch ? "Edit Research" : "Add Research"}
             </h2>
@@ -205,7 +325,6 @@ export default function ResearchManagement() {
                 required
               />
 
-              {/* ===== Publication ===== */}
               {formData.category === "Publication" && (
                 <>
                   <Input
@@ -226,7 +345,6 @@ export default function ResearchManagement() {
                 </>
               )}
 
-              {/* ===== Project ===== */}
               {formData.category === "Project" && (
                 <>
                   <Input
@@ -244,13 +362,11 @@ export default function ResearchManagement() {
                     value={formData.funding_amount}
                     onChange={(v) => handleChange("funding_amount", v)}
                   />
-
                   <Input
                     label="Duration"
                     value={formData.duration}
                     onChange={(v) => handleChange("duration", v)}
                   />
-
                   <Input
                     label="PI / Co-PI"
                     value={formData.pi_co_pi}
@@ -269,7 +385,6 @@ export default function ResearchManagement() {
                 </>
               )}
 
-              {/* ===== Patent ===== */}
               {formData.category === "Patent" && (
                 <>
                   <Input
@@ -290,7 +405,6 @@ export default function ResearchManagement() {
                 </>
               )}
 
-              {/* ===== Collaboration ===== */}
               {formData.category === "Collaboration" && (
                 <Input
                   label="Organization Name"
@@ -305,10 +419,15 @@ export default function ResearchManagement() {
                 onChange={(v) => handleChange("link", v)}
               />
 
-              <input
-                type="file"
-                onChange={(e) => setImageFile(e.target.files[0])}
-              />
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Research Media Image (optional)
+                </label>
+                <input
+                  type="file"
+                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                />
+              </div>
 
               <label className="flex gap-2 items-center">
                 <input
@@ -327,6 +446,272 @@ export default function ResearchManagement() {
                 value={formData.display_order}
                 onChange={(v) => handleChange("display_order", v)}
               />
+
+              <div className="border-t pt-6 mt-6">
+                <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                  <h3 className="text-xl font-semibold">Content Blocks</h3>
+
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => addBlock("text")}
+                      className="btn-secondary"
+                    >
+                      + Text
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => addBlock("image")}
+                      className="btn-secondary"
+                    >
+                      + Image
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => addBlock("table")}
+                      className="btn-secondary"
+                    >
+                      + Table
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => addBlock("accordion")}
+                      className="btn-secondary"
+                    >
+                      + Accordion
+                    </button>
+                  </div>
+                </div>
+
+                {blocks.length === 0 ? (
+                  <div className="text-sm text-gray-500 mb-2">
+                    No content blocks added yet.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {blocks.map((block, idx) => (
+                      <div
+                        key={block._id}
+                        className="border rounded-lg p-4 bg-gray-50"
+                      >
+                        <div className="flex items-center justify-between gap-3 mb-4">
+                          <div className="font-semibold uppercase text-sm text-gray-700">
+                            {block.type}
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => moveBlock(idx, -1)}
+                              className="text-sm text-blue-600"
+                            >
+                              Up
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveBlock(idx, 1)}
+                              className="text-sm text-blue-600"
+                            >
+                              Down
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeBlock(block._id)}
+                              className="text-sm text-red-600"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+
+                        {block.type === "text" && (
+                          <div className="space-y-3">
+                            <Input
+                              label="Block Title"
+                              value={block.title || ""}
+                              onChange={(v) =>
+                                updateBlock(block._id, { title: v })
+                              }
+                            />
+                            <Textarea
+                              label="Block Content"
+                              value={block.content || ""}
+                              onChange={(v) =>
+                                updateBlock(block._id, { content: v })
+                              }
+                            />
+                          </div>
+                        )}
+
+                        {block.type === "image" && (
+                          <div className="space-y-3">
+                            <Input
+                              label="Block Title"
+                              value={block.title || ""}
+                              onChange={(v) =>
+                                updateBlock(block._id, { title: v })
+                              }
+                            />
+                            <Input
+                              label="Image URL"
+                              value={block.src || ""}
+                              onChange={(v) =>
+                                updateBlock(block._id, { src: v })
+                              }
+                            />
+                            <Input
+                              label="Alt Text"
+                              value={block.alt || ""}
+                              onChange={(v) =>
+                                updateBlock(block._id, { alt: v })
+                              }
+                            />
+                            <Input
+                              label="Caption"
+                              value={block.caption || ""}
+                              onChange={(v) =>
+                                updateBlock(block._id, { caption: v })
+                              }
+                            />
+                          </div>
+                        )}
+
+                        {block.type === "table" && (
+                          <div className="space-y-3">
+                            <Input
+                              label="Table Title"
+                              value={block.title || ""}
+                              onChange={(v) =>
+                                updateBlock(block._id, { title: v })
+                              }
+                            />
+
+                            <div>
+                              <label className="block text-sm font-medium mb-1">
+                                Columns (comma separated)
+                              </label>
+                              <input
+                                value={(block.columns || []).join(", ")}
+                                onChange={(e) =>
+                                  updateBlock(block._id, {
+                                    columns: e.target.value
+                                      .split(",")
+                                      .map((s) => s.trim()),
+                                  })
+                                }
+                                className="input-field"
+                                placeholder="Title, Funding Agency, PI, Funding, Duration, Status"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium mb-1">
+                                Rows (one row per line, values comma separated)
+                              </label>
+                              <textarea
+                                rows={7}
+                                value={(block.rows || [])
+                                  .map((row) => row.join(", "))
+                                  .join("\n")}
+                                onChange={(e) => {
+                                  const rows = e.target.value
+                                    .split("\n")
+                                    .filter((line) => line.trim() !== "")
+                                    .map((line) =>
+                                      line.split(",").map((s) => s.trim()),
+                                    );
+
+                                  updateBlock(block._id, { rows });
+                                }}
+                                className="input-field"
+                                placeholder="AI in Healthcare, DST India, Dr. XYZ, ₹10,00,000, 2022-2025, Ongoing"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {block.type === "accordion" && (
+                          <div className="space-y-3">
+                            <Input
+                              label="Accordion Title"
+                              value={block.title || ""}
+                              onChange={(v) =>
+                                updateBlock(block._id, { title: v })
+                              }
+                            />
+                            <Textarea
+                              label="Accordion Intro Content"
+                              value={block.content || ""}
+                              onChange={(v) =>
+                                updateBlock(block._id, { content: v })
+                              }
+                            />
+
+                            <div className="flex justify-between items-center mt-4">
+                              <div className="font-medium">Accordion Items</div>
+                              <button
+                                type="button"
+                                onClick={() => addAccordionItem(idx)}
+                                className="text-sm text-blue-600"
+                              >
+                                + Add Item
+                              </button>
+                            </div>
+
+                            <div className="space-y-3">
+                              {(Array.isArray(block.items)
+                                ? block.items
+                                : []
+                              ).map((item, itemIndex) => (
+                                <div
+                                  key={itemIndex}
+                                  className="border rounded-md p-3 bg-white"
+                                >
+                                  <div className="flex justify-between mb-3">
+                                    <div className="text-sm font-semibold">
+                                      Item {itemIndex + 1}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        removeAccordionItem(idx, itemIndex)
+                                      }
+                                      className="text-sm text-red-600"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+
+                                  <div className="space-y-3">
+                                    <Input
+                                      label="Heading"
+                                      value={item.heading || ""}
+                                      onChange={(v) =>
+                                        updateAccordionItem(idx, itemIndex, {
+                                          heading: v,
+                                        })
+                                      }
+                                    />
+                                    <Textarea
+                                      label="Text"
+                                      value={item.text || ""}
+                                      onChange={(v) =>
+                                        updateAccordionItem(idx, itemIndex, {
+                                          text: v,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="flex gap-4 pt-4">
                 <button type="submit" className="btn-primary flex-1">
@@ -348,7 +733,6 @@ export default function ResearchManagement() {
   );
 }
 
-/* ===== Small helpers ===== */
 const Input = ({ label, value, onChange, type = "text", required }) => (
   <div>
     <label className="block text-sm font-medium mb-1">{label}</label>
@@ -392,3 +776,74 @@ const Select = ({ label, value, onChange, options, required }) => (
     </select>
   </div>
 );
+
+function normalizeBlocks(value) {
+  if (!value) return [];
+
+  if (Array.isArray(value)) return value;
+
+  if (typeof value === "object") return [value];
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+
+      if (!parsed) return [];
+
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+function createDefaultBlock(type) {
+  const base = {
+    _id: Date.now() + Math.random(),
+    type,
+  };
+
+  if (type === "text") {
+    return {
+      ...base,
+      title: "",
+      content: "",
+    };
+  }
+
+  if (type === "image") {
+    return {
+      ...base,
+      title: "",
+      src: "",
+      alt: "",
+      caption: "",
+    };
+  }
+
+  if (type === "table") {
+    return {
+      ...base,
+      title: "",
+      columns: ["Column 1"],
+      rows: [[""]],
+    };
+  }
+
+  if (type === "accordion") {
+    return {
+      ...base,
+      title: "",
+      content: "",
+      items: [{ heading: "", text: "" }],
+    };
+  }
+
+  return {
+    ...base,
+    title: "",
+    content: "",
+  };
+}

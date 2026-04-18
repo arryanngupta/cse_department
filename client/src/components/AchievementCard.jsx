@@ -1,6 +1,9 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const AchievementCard = ({ achievement }) => {
+  const navigate = useNavigate();
+
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -22,12 +25,16 @@ const AchievementCard = ({ achievement }) => {
       initial="hidden"
       animate="visible"
       variants={cardVariants}
-      className="group relative rounded-xl overflow-hidden bg-white border border-gray-100 hover:border-[#A6192E]/25 shadow-sm hover:shadow-lg transition-all duration-300"
+      onClick={() => navigate(`/achievements/${achievement.id}`)}
+      className="group relative cursor-pointer rounded-xl overflow-hidden bg-white border border-gray-100 hover:border-[#A6192E]/25 shadow-sm hover:shadow-lg transition-all duration-300"
     >
       {achievement.image_path && (
-        <motion.div className="aspect-video overflow-hidden bg-gray-100 relative" whileHover="hover">
+        <motion.div
+          className="aspect-video overflow-hidden bg-gray-100 relative"
+          whileHover="hover"
+        >
           <motion.img
-            src={achievement.image_path}   // ✅ No getImageUrl
+            src={achievement.image_path}
             alt={achievement.title || 'Achievement image'}
             variants={imageVariants}
             className="w-full h-full object-cover"
@@ -38,9 +45,7 @@ const AchievementCard = ({ achievement }) => {
       )}
 
       <div className="p-6">
-        <motion.h3
-          className="text-xl font-merriweather font-bold text-gray-900 mb-3 group-hover:text-[#A6192E] transition-colors"
-        >
+        <motion.h3 className="text-xl font-merriweather font-bold text-gray-900 mb-3 group-hover:text-[#A6192E] transition-colors">
           {achievement.title}
         </motion.h3>
 
@@ -70,31 +75,31 @@ const AchievementCard = ({ achievement }) => {
           </p>
         )}
 
-        {achievement.link && (
-          <motion.a
-            href={achievement.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-[#A6192E] font-medium text-sm hover:text-[#7D0F22]"
-            whileHover={{ x: 5 }}
-            transition={{ type: 'spring', stiffness: 450, damping: 18 }}
+        <motion.button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/achievements/${achievement.id}`);
+          }}
+          className="inline-flex items-center text-[#A6192E] font-medium text-sm hover:text-[#7D0F22]"
+          whileHover={{ x: 5 }}
+          transition={{ type: 'spring', stiffness: 450, damping: 18 }}
+        >
+          Read More
+          <svg
+            className="w-4 h-4 ml-1"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            Read More
-            <svg
-              className="w-4 h-4 ml-1"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 7l5 5m0 0l-5 5m5-5H6"
-              />
-            </svg>
-          </motion.a>
-        )}
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 7l5 5m0 0l-5 5m5-5H6"
+            />
+          </svg>
+        </motion.button>
       </div>
 
       <div className="pointer-events-none absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-[#A6192E] via-[#7D0F22] to-[#A6192E] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

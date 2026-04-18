@@ -1,55 +1,68 @@
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
-import Loading from "../components/Loading.jsx";
-import PageWrapper from "../components/common/PageWrapper.jsx";
 import { publicAPI } from "../lib/api.js";
+import useDetailData from "../hooks/useDetailData.js";
+import DetailPage from "../components/DetailPage.jsx";
+import { formatDateTime, getPrimitiveDetails, firstNonEmpty } from "../utils/detailFields.js";
 
-const EventDetail = () => {
+export default function EventDetail() {
   const { id } = useParams();
-  const [event, setEvent] = useState(null);
+  const { item, loading, error } = useDetailData(publicAPI.getEventById, id);
 
-  useEffect(() => {
-    publicAPI.getEventById(id).then((res) => {
-      setEvent(res.data.data);
-    });
-  }, [id]);
+  const title = item?.title || "Event";
+  const image = firstNonEmpty(item?.banner_path, item?.image_path);
+  const subtitle = item?.description || "";
 
-  if (!event) return <Loading />;
+  const meta = [
+    { label: "Starts", value: formatDateTime(item?.startsAt) },
+    { label: "Ends", value: formatDateTime(item?.endsAt) },
+    { label: "Venue", value: item?.venue || "—" },
+    { label: "Published", value: item?.isPublished ? "Yes" : "No" },
+  ];
+
+  const additionalFields = getPrimitiveDetails(item, [
+    "startsAt",
+    "endsAt",
+    "venue",
+    "isPublished",
+  ]);
 
   return (
-    <PageWrapper>
-      <div className="container mx-auto px-4 py-16 max-w-5xl">
-        <h1 className="text-4xl font-bold mb-3">{event.title}</h1>
-        <p className="text-gray-500 mb-6">
-          {new Date(event.startsAt).toDateString()}
-        </p>
+    <DetailPage
+      item={item}
+      loading={loading}
+      error={error}
+      backTo="/events"
+      backLabel="Back to Events"
+      entityName="Event"
+      title={title}
+      badge="Event"
+      subtitle={subtitle}
+      image={image}
+      imageAlt={title}
+      meta={meta}
+      additionalFields={additionalFields}
+    >
+      {item?.description && (
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-3">About this event</h2>
+          <p className="text-gray-700 leading-7 whitespace-pre-line">
+            {item.description}
+          </p>
+        </div>
+      )}
 
-        {event.banner_path && (
-          <img
-            src={event.banner_path}
-            alt={event.title}
-            className="w-full rounded-xl mb-10"
-          />
-        )}
-
-        <div
-          className="prose max-w-none"
-          dangerouslySetInnerHTML={{ __html: event.description }}
-        />
-
-        {event.link && (
+      {item?.link && (
+        <div className="pt-2">
           <a
-            href={event.link}
+            href={item.link}
             target="_blank"
             rel="noreferrer"
-            className="inline-block mt-8 text-[#8B0000] font-semibold underline"
+            className="inline-flex rounded-lg bg-[#A6192E] px-4 py-2 text-sm font-semibold text-white"
           >
-            More Information →
+            Open event link
           </a>
-        )}
-      </div>
-    </PageWrapper>
+        </div>
+      )}
+    </DetailPage>
   );
-};
-
-export default EventDetail;
+}

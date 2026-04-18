@@ -25,8 +25,14 @@ const User = sequelize.define('User', {
     allowNull: false
   },
   role: {
-    type: DataTypes.ENUM('admin'),
+    type: DataTypes.ENUM('super_admin', 'admin', 'faculty'),
+    allowNull: false,
     defaultValue: 'admin'
+  },
+  must_change_password: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
   }
 }, {
   tableName: 'users',

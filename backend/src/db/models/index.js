@@ -11,6 +11,7 @@ import DirectoryEntry from './DirectoryEntry.js';
 import InfoBlock from './InfoBlock.js';
 import Research from './Research.js';
 import Facility from './Facility.js';
+import Opportunity from './Opportunity.js';
 import {
   ProgramSection,
   CurriculumSemester,
@@ -24,7 +25,8 @@ import { sequelize } from '../../config/database.js';
 // Associations
 Program.hasMany(ProgramSection, { foreignKey: 'program_id', as: 'sections' });
 ProgramSection.belongsTo(Program, { foreignKey: 'program_id' });
-
+User.hasOne(People, { foreignKey: 'user_id', as: 'facultyProfile' });
+People.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 // Export all
 export {
   sequelize,
@@ -44,5 +46,6 @@ export {
   CurriculumSemester,
   CurriculumCourse,
   ProgramOutcome,
-  SectionContent
+  SectionContent,
+  Opportunity
 };

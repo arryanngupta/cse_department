@@ -1,7 +1,5 @@
-// src/pages/Achievements.jsx
-
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom"; // ✅ ADDED
+import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import AchievementCard from "../components/AchievementCard.jsx";
 import Loading from "../components/Loading.jsx";
@@ -10,14 +8,13 @@ import PageWrapper from "../components/common/PageWrapper.jsx";
 import { publicAPI } from "../lib/api.js";
 
 const Achievements = () => {
-  const location = useLocation();        // ✅ NEW
-  const navigate = useNavigate();        // ✅ NEW
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const [category, setCategory] = useState("student"); // DEFAULT
+  const [category, setCategory] = useState("student");
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ SYNC CATEGORY FROM URL
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const cat = params.get("category");
@@ -25,11 +22,10 @@ const Achievements = () => {
     if (cat === "student" || cat === "faculty") {
       setCategory(cat);
     } else {
-      setCategory("student"); // fallback
+      setCategory("student");
     }
   }, [location.search]);
 
-  // EXISTING FETCH (UNCHANGED)
   useEffect(() => {
     fetchAchievements();
   }, [category]);
@@ -49,18 +45,15 @@ const Achievements = () => {
   return (
     <PageWrapper>
       <section className="container mx-auto px-4 pb-16">
-
-        {/* HEADER */}
         <SectionHeader title="Achievements" />
 
-        {/* 🔥 TABS */}
         <div className="flex justify-center gap-4 mt-8 mb-10">
           {["student", "faculty"].map((cat) => (
             <button
               key={cat}
               onClick={() => {
-                setCategory(cat); // keep your logic
-                navigate(`/achievements?category=${cat}`); // ✅ URL SYNC
+                setCategory(cat);
+                navigate(`/achievements?category=${cat}`);
               }}
               className={`px-6 py-2 rounded-full border text-sm font-medium transition-all
                 ${
@@ -76,7 +69,6 @@ const Achievements = () => {
           ))}
         </div>
 
-        {/* CONTENT */}
         {loading ? (
           <Loading />
         ) : achievements.length > 0 ? (
@@ -95,7 +87,6 @@ const Achievements = () => {
             No achievements found.
           </p>
         )}
-
       </section>
     </PageWrapper>
   );

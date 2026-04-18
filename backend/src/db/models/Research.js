@@ -23,6 +23,11 @@ const Research = sequelize.define('Research', {
     allowNull: false
   },
 
+  content_json: {
+  type: DataTypes.TEXT('long'),
+  allowNull: true
+},
+
   /* ===== Common ===== */
   description: DataTypes.TEXT,
   link: DataTypes.STRING,

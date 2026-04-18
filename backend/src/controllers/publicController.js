@@ -17,7 +17,8 @@ import {
   CurriculumSemester,
   CurriculumCourse,
   ProgramOutcome,
-  SectionContent
+  SectionContent,
+  Opportunity
 } from '../db/models/index.js';
 
 // 🔥 NEW: Faculty profile normalizer
@@ -131,26 +132,28 @@ export const getPersonBySlug = async (req, res, next) => {
 /* ======================= PROGRAMS ======================= */
 export const getPrograms = async (req, res, next) => {
   try {
-    const programs = await Program.findAll({
+    const { page = 1, limit = 6 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Program.findAndCountAll({
       order: [
         ['level', 'ASC'],
         ['display_order', 'ASC'],
         ['name', 'ASC']
       ],
-      attributes: [
-        'id',
-        'name',
-        'short_name',
-        'level',
-        'description',
-        'overview',
-        'duration',
-        'total_credits',
-        'curriculum_pdf_path'
-      ]
+      limit: parseInt(limit, 10),
+      offset: parseInt(offset, 10)
     });
 
-    res.json({ data: programs });
+    res.json({
+      data: rows,
+      meta: {
+        total: count,
+        page: parseInt(page, 10),
+        totalPages: Math.ceil(count / limit)
+      }
+    });
+
   } catch (error) {
     next(error);
   }
@@ -336,6 +339,21 @@ export const getAchievements = async (req, res, next) => {
   }
 };
 
+export const getAchievementById = async (req, res, next) => {
+  try {
+    const achievement = await Achievement.findOne({
+      where: { id: req.params.id, isPublished: true },
+    });
+
+    if (!achievement) {
+      return res.status(404).json({ error: "Achievement not found" });
+    }
+
+    res.json({ data: achievement });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const getNewsletters = async (req, res, next) => {
   try {
@@ -432,6 +450,37 @@ export const getFacilityById = async (req, res, next) => {
     const facility = await Facility.findByPk(req.params.id);
     if (!facility) return res.status(404).json({ error: 'Facility not found' });
     res.json({ data: facility });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Opportunity
+export const getOpportunities = async (req, res, next) => {
+  try {
+    const items = await Opportunity.findAll({
+      where: { is_active: true },
+      order: [['page_group', 'ASC'], ['display_order', 'ASC'], ['id', 'ASC']]
+    });
+
+    res.json({ data: items });
+  } catch (error) {
+    console.error("❌ GET Opportunities Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getOpportunityById = async (req, res, next) => {
+  try {
+    const item = await Opportunity.findOne({
+      where: { id: req.params.id, is_active: true }
+    });
+
+    if (!item) {
+      return res.status(404).json({ error: 'Opportunity not found' });
+    }
+
+    res.json({ data: item });
   } catch (error) {
     next(error);
   }
