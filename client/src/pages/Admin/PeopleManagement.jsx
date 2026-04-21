@@ -558,7 +558,7 @@ const PeopleManagement = () => {
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  className="rounded-lg bg-lnmiit-red px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+                  className="rounded-lg bg-lnmiit-red px-4 py-2 text-sm font-medium text-white transition bg-red-700"
                 >
                   {editingPerson ? "Update" : "Create"}
                 </button>
