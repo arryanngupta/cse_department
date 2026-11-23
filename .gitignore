@@ -39,7 +39,22 @@ Thumbs.db
 *.tmp
 *.temp
 
-# Lockfiles (optional)
-package-lock.json
-pnpm-lock.yaml
-yarn.lock
+# Browser automation artifacts (screenshots, snapshots, console logs)
+.playwright-mcp/
+
+# Local database backups — keep these outside the repository.
+# *.sql above already covers the dumps in the project root.
+cse-department-backups/
+
+# Lockfiles are intentionally COMMITTED.
+#
+# They were previously ignored. That makes installs non-reproducible — a fresh
+# clone resolves whatever happens to be latest — and it breaks `npm ci`, which
+# requires a lockfile and is what CI and most deploy pipelines run.
+#
+# This project also needs a pinned resolution: react-helmet-async@2.0.5 does
+# not list React 19 as a supported peer, so installs need --legacy-peer-deps
+# and the exact resolved tree matters.
+
+# Windows/Cygwin crash dumps — one of these was committed previously.
+*.stackdump
