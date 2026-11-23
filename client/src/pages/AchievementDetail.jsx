@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { publicAPI } from "../lib/api.js";
 import useDetailData from "../hooks/useDetailData.js";
 import DetailPage from "../components/DetailPage.jsx";
+import { breadcrumbSchema } from "../lib/structuredData.js";
 import { firstNonEmpty, getPrimitiveDetails } from "../utils/detailFields.js";
 
 export default function AchievementDetail() {
@@ -42,6 +43,11 @@ export default function AchievementDetail() {
       imageAlt={title}
       meta={meta}
       additionalFields={additionalFields}
+      structuredData={breadcrumbSchema([
+        { name: "Home", path: "/" },
+        { name: "Achievements", path: "/achievements" },
+        { name: title, path: `/achievements/${id}` },
+      ])}
     >
       {item?.description && (
         <div>

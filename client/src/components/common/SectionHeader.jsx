@@ -1,10 +1,18 @@
 // src/components/common/SectionHeader.jsx
 import { motion } from "framer-motion";
 
-const SectionHeader = ({ title, subtitle }) => {
+/**
+ * `as` exists because on News, Events, Achievements and Programs this is the
+ * only heading at the top of the page — rendering it as an h2 left those pages
+ * with no h1 at all, which breaks the document outline for screen-reader users
+ * who navigate by heading level.
+ */
+const SectionHeader = ({ title, subtitle, as = "h2" }) => {
+  const Heading = motion[as] || motion.h2;
+
   return (
     <div className="text-center mb-12">
-      <motion.h2
+      <Heading
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
@@ -12,7 +20,7 @@ const SectionHeader = ({ title, subtitle }) => {
         className="text-3xl md:text-4xl font-bold text-[#A6192E] drop-shadow-sm"
       >
         {title}
-      </motion.h2>
+      </Heading>
 
       {subtitle && (
         <motion.p

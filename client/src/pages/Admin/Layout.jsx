@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { authAPI } from "../../lib/api.js";
+import SEO from "../../components/SEO.jsx";
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ const Layout = () => {
             navigate(allowedPath, { replace: true });
           }
         }
-      } catch (error) {
+      } catch {
         navigate("/admin/login");
       }
     };
@@ -91,6 +92,14 @@ const Layout = () => {
       { path: "/admin/research", label: "Research", icon: "🔬" },
       { path: "/admin/facilities", label: "Facilities", icon: "🏢" },
       { path: "/admin/opportunities", label: "Opportunities", icon: "💼" },
+
+      // Cross-cutting tools, grouped after the per-type content sections.
+      { path: "/admin/submissions", label: "Submissions", icon: "📥", group: "Tools" },
+      { path: "/admin/scheduled", label: "Scheduled", icon: "⏰", group: "Tools" },
+      { path: "/admin/media", label: "Media Library", icon: "🖼️", group: "Tools" },
+      { path: "/admin/import", label: "Import CSV", icon: "📤", group: "Tools" },
+      { path: "/admin/versions", label: "Change History", icon: "🕐", group: "Tools" },
+      { path: "/admin/audit-logs", label: "Audit Log", icon: "🛡️", group: "Tools" },
     ];
   }, [user]);
 
@@ -104,6 +113,15 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
+      {/* One noindex on the shell covers every admin route beneath it. The
+          pages are behind auth, but a crawler that sees the login redirect
+          should still not index these URLs. */}
+      <SEO title="Admin" noindex />
+
+      <a href="#admin-content" className="skip-to-content">
+        Skip to main content
+      </a>
+
       <header className="bg-white shadow-md fixed top-0 left-0 right-0 z-40">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center space-x-4">
@@ -150,10 +168,17 @@ const Layout = () => {
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           } lg:translate-x-0 transition-transform duration-200 ease-in-out z-30 overflow-y-auto border-r`}
         >
-          <nav className="p-4 space-y-1">
-            {menuItems.map((item) => (
+          <nav className="p-4 space-y-1" aria-label="Admin sections">
+            {menuItems.map((item, index) => (
+              <div key={item.path}>
+                {/* Heading before the first item of a group, so the tools are
+                    visibly separate from the per-type content sections. */}
+                {item.group && menuItems[index - 1]?.group !== item.group && (
+                  <div className="mt-4 mb-1 px-4 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                    {item.group}
+                  </div>
+                )}
               <Link
-                key={item.path}
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
                 className={`relative flex items-center px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 ${
@@ -162,14 +187,17 @@ const Layout = () => {
                     : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
-                <span className="mr-3 text-lg">{item.icon}</span>
+                <span className="mr-3 text-lg" aria-hidden="true">
+                  {item.icon}
+                </span>
                 {item.label}
               </Link>
+              </div>
             ))}
           </nav>
         </aside>
 
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main id="admin-content" tabIndex={-1} className="flex-1 p-6 overflow-y-auto">
           <Outlet />
         </main>
       </div>

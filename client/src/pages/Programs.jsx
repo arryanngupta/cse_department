@@ -3,6 +3,15 @@ import { useLocation } from "react-router-dom";
 import { publicAPI } from "../lib/api.js";
 import { Download, ChevronDown, ChevronUp } from "lucide-react";
 import CurriculumTable from "../components/CurriculumTable.jsx";
+import SEO from "../components/SEO.jsx";
+import { courseSchema, breadcrumbSchema } from "../lib/structuredData.js";
+
+/** Display order, and the fallback order when no hash is given. */
+const PROGRAM_GROUPS = [
+  { key: "bachelors", title: "Bachelors Programmes" },
+  { key: "masters", title: "Masters Programmes" },
+  { key: "doctoral", title: "Doctoral Programmes" },
+];
 
 export default function Programs() {
   const location = useLocation();
@@ -42,9 +51,13 @@ export default function Programs() {
 
   /* ================= HASH NAVIGATION ================= */
 
-  const activeHash = useMemo(() => {
-    return location.hash.replace("#", "") || "doctoral";
-  }, [location.hash]);
+  // The raw requested group, empty string when none. Resolving the default
+  // here is what caused the blank page; activeGroup below does it instead,
+  // because only that has the programme counts to decide with.
+  const activeHash = useMemo(
+    () => location.hash.replace("#", ""),
+    [location.hash],
+  );
 
   /* ================= GROUP PROGRAMS ================= */
 
@@ -56,6 +69,26 @@ export default function Programs() {
     }),
     [programs],
   );
+
+  /**
+   * Which group to show.
+   *
+   * With no hash this page used to default to "doctoral", and renderSection
+   * returned null for an empty list — so /programs (the canonical URL, and the
+   * one the navbar's plain "Programs" link points at) rendered a completely
+   * blank page whenever the department had no PhD programme on record, which
+   * is the case today. Fall back to the first group that actually has
+   * programmes instead.
+   */
+  const activeGroup = useMemo(() => {
+    const explicit = PROGRAM_GROUPS.find((g) => g.key === activeHash);
+    if (explicit) return explicit;
+
+    return (
+      PROGRAM_GROUPS.find((g) => groupedPrograms[g.key].length > 0) ||
+      PROGRAM_GROUPS[0]
+    );
+  }, [activeHash, groupedPrograms]);
 
   /* ================= SCROLL FIX ================= */
 
@@ -123,14 +156,27 @@ export default function Programs() {
   /* ================= SECTION RENDERER ================= */
 
   const renderSection = (title, list) => {
-    if (!list || list.length === 0) return null;
+    if (!list || list.length === 0) {
+      return (
+        <section className="mb-24">
+          <h1 className="text-4xl font-serif font-bold text-gray-900 mb-6">
+            {title}
+          </h1>
+          <p className="text-gray-600">
+            No programmes in this category are listed at the moment.
+          </p>
+        </section>
+      );
+    }
 
     return (
       <section className="mb-24">
         <div className="flex items-end justify-between gap-4 mb-10">
-          <h2 className="text-4xl font-serif font-bold text-gray-900">
+          {/* An h1: exactly one programme group renders at a time, so this is
+              the page's single top-level heading. */}
+          <h1 className="text-4xl font-serif font-bold text-gray-900">
             {title}
-          </h2>
+          </h1>
           <div className="hidden md:block h-[2px] flex-1 bg-gradient-to-r from-red-800 to-transparent ml-6 rounded-full" />
         </div>
 
@@ -359,17 +405,28 @@ export default function Programs() {
   /* ================= PAGE ================= */
 
   return (
-    <div className="bg-white px-6 py-10 md:px-12 lg:px-16">
+    <>
+      {/* One Course node per programme actually loaded. Built from the same
+          list the page renders, so it never describes a programme that is not
+          on screen. */}
+      <SEO
+        title="Academic Programmes"
+        description="B.Tech, M.Tech and Ph.D. programmes offered by the Department of Computer Science & Engineering, LNMIIT Jaipur."
+        keywords="LNMIIT CSE programmes, B.Tech CSE, M.Tech CSE, PhD computer science, Jaipur"
+        structuredData={[
+          ...programs.map(courseSchema).filter(Boolean),
+          breadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "Programmes", path: "/programs" },
+          ]),
+        ].filter(Boolean)}
+      />
+
+      <div className="bg-white px-6 py-10 md:px-12 lg:px-16">
       <div className="max-w-6xl mx-auto">
-        {activeHash === "doctoral" &&
-          renderSection("Doctoral Programmes", groupedPrograms.doctoral)}
-
-        {activeHash === "masters" &&
-          renderSection("Masters Programmes", groupedPrograms.masters)}
-
-        {activeHash === "bachelors" &&
-          renderSection("Bachelors Programmes", groupedPrograms.bachelors)}
+        {renderSection(activeGroup.title, groupedPrograms[activeGroup.key])}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

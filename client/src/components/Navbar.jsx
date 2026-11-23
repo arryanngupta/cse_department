@@ -12,6 +12,8 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import logo from "../assets/images/lnmiit_transparent_logo.png";
+import SearchBox from "./common/SearchBox.jsx";
+import LanguageSwitcher from "./common/LanguageSwitcher.jsx";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -37,17 +39,6 @@ const Navbar = () => {
 
   const toggleDropdown = (id) => {
     setOpenDropdown(openDropdown === id ? null : id);
-  };
-
-  const changeLanguage = (lang) => {
-    const select = document.querySelector(".goog-te-combo");
-
-    if (select) {
-      select.value = lang;
-      select.dispatchEvent(new Event("change"));
-    } else {
-      console.log("Translator not ready yet");
-    }
   };
 
   const navLinks = [
@@ -144,8 +135,10 @@ const Navbar = () => {
 
   return (
     <>
-      {/* Top bar */}
-      <div className="bg-[#8B0000] text-white">
+      {/* Top bar. A <header> rather than a <div> so the page has a banner
+          landmark — note it wraps only this strip, not the <nav> below, which
+          must stay outside any wrapper for `sticky top-0` to keep working. */}
+      <header className="bg-[#8B0000] text-white">
         <div className="container mx-auto px-4 py-2.5">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-6 text-sm">
             <div className="flex flex-wrap items-center gap-4">
@@ -156,37 +149,30 @@ const Navbar = () => {
             </div>
 
             <div className="flex items-center gap-4 text-lg">
-              <FaInstagram />
-              <FaYoutube />
-              <FaFacebookF />
-              <FaTwitter />
-              <FaLinkedinIn />
+              {/* Decorative: these are icons, not links — hidden from screen
+                  readers so they are not announced as meaningless graphics. */}
+              <FaInstagram aria-hidden="true" />
+              <FaYoutube aria-hidden="true" />
+              <FaFacebookF aria-hidden="true" />
+              <FaTwitter aria-hidden="true" />
+              <FaLinkedinIn aria-hidden="true" />
 
-              {/* Language Toggle */}
-              <div className="ml-4 text-sm font-medium flex gap-2">
-                <span
-                  onClick={() => changeLanguage("en")}
-                  className="cursor-pointer hover:underline"
-                >
-                  English
-                </span>
-
-                <span>|</span>
-
-                <span
-                  onClick={() => changeLanguage("hi")}
-                  className="cursor-pointer hover:underline"
-                >
-                  हिन्दी
-                </span>
+              {/* Language switcher. Was a pair of <span onClick> text links
+                  offering only English and Hindi: not focusable, no role, no
+                  name, and no indication of the active language. */}
+              <div className="ml-2">
+                <LanguageSwitcher />
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Navbar */}
+      {/* Navbar — named, because the footer contributes navigation landmarks
+          too and an unlabelled one is useless in a screen reader's landmark
+          list. */}
       <nav
+        aria-label="Primary"
         className={`bg-white sticky top-0 z-50 transition-shadow ${
           isScrolled ? "shadow-lg" : "shadow-md"
         }`}
@@ -269,24 +255,43 @@ const Navbar = () => {
             ))}
           </div>
 
+          {/* Search (desktop) */}
+          <div className="hidden lg:block w-56 xl:w-64">
+            <SearchBox />
+          </div>
+
           {/* Logo */}
           <Link to="/">
             <img src={logo} alt="LNMIIT Logo" className="h-14" />
           </Link>
 
-          {/* Hamburger */}
+          {/* Hamburger — the icon is the only content, so the button needs an
+              explicit name and state for assistive technology. */}
           <button
+            type="button"
             className="lg:hidden text-2xl"
             onClick={() => setIsOpen(!isOpen)}
+            aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isOpen}
+            aria-controls="mobile-menu"
           >
-            {isOpen ? <FaTimes /> : <FaBars />}
+            {isOpen ? (
+              <FaTimes aria-hidden="true" />
+            ) : (
+              <FaBars aria-hidden="true" />
+            )}
           </button>
         </div>
 
         {/* Mobile Menu */}
         <AnimatePresence>
           {isOpen && (
-            <motion.div className="lg:hidden bg-white border-t shadow-lg">
+            <motion.div id="mobile-menu" className="lg:hidden bg-white border-t shadow-lg">
+              {/* Search (mobile) — closes the menu on navigation */}
+              <div className="border-b px-6 py-4">
+                <SearchBox onNavigate={() => setIsOpen(false)} />
+              </div>
+
               {navLinks.map((item) => (
                 <div key={item.id} className="border-b">
                   <button

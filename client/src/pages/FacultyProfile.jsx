@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 
 import Loading from "../components/Loading";
 import FacultySidebar from "../components/FacultySidebar";
 import FacultyAccordion from "../components/FacultyAccordion";
 import { publicAPI } from "../lib/api.js";
 import SEO from "../components/SEO.jsx";
+import { personSchema, breadcrumbSchema } from "../lib/structuredData.js";
 
 export default function FacultyProfile() {
   const { slug } = useParams();
@@ -60,17 +61,35 @@ export default function FacultyProfile() {
   return (
     <>
       <SEO
-        title={`${faculty.name} — ${faculty.designation} | Department of CSE | LNMIIT Jaipur`}
-        description={`${faculty.name}, ${faculty.designation} at LNMIIT Jaipur. Research interests: ${researchArea || "Not specified."}`}
-        keywords={`${faculty.name}, ${researchArea || ""}, LNMIIT CSE, faculty`}
-        canonical={`https://cse.lnmiit.ac.in/people/${faculty.slug || slug}`}
+        title={`${faculty.name} — ${faculty.designation}`}
+        description={`${faculty.name}, ${faculty.designation} at LNMIIT Jaipur.${
+          researchArea ? ` Research interests: ${researchArea}` : ""
+        }`.slice(0, 160)}
+        keywords={[faculty.name, researchArea, "LNMIIT CSE", "faculty"]
+          .filter(Boolean)
+          .join(", ")}
+        type="profile"
+        image={faculty.photo_path}
+        structuredData={[
+          personSchema(faculty),
+          breadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "People", path: "/people" },
+            {
+              name: faculty.name,
+              path: `/people/${faculty.slug || slug}`,
+            },
+          ]),
+        ].filter(Boolean)}
       />
 
       <div className="min-h-screen bg-white">
         <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-4 gap-10">
           <FacultySidebar faculty={faculty} />
 
-          <main className="lg:col-span-3 space-y-12">
+          {/* A div, not <main>: PublicLayout already supplies the page's main
+              landmark, and nesting two is invalid. */}
+          <div className="lg:col-span-3 space-y-12">
             {faculty.summary && (
               <section>
                 <h1 className="font-serif text-3xl lg:text-4xl font-bold mb-3">
@@ -111,6 +130,46 @@ export default function FacultyProfile() {
               </section>
             )}
 
+            {/* Research linked relationally via research_authors. Distinct
+                from the free-text `publications` field, which the accordion
+                sections below still render. */}
+            {Array.isArray(faculty.linkedResearch) &&
+              faculty.linkedResearch.length > 0 && (
+                <section>
+                  <h2 className="font-serif text-2xl lg:text-3xl font-bold mb-4">
+                    Research &amp; Publications
+                  </h2>
+
+                  <ul className="space-y-3">
+                    {faculty.linkedResearch.map((item) => (
+                      <li key={`${item.id}-${item.role}`}>
+                        <Link
+                          to={item.url}
+                          className="block rounded-lg border border-gray-200 p-4 transition hover:border-[#8B0000]/40 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#8B0000]/30"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <span className="font-medium text-gray-900">
+                              {item.title}
+                            </span>
+                            <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-medium text-gray-600">
+                              {item.category}
+                            </span>
+                          </div>
+
+                          {(item.journal || item.year || item.status) && (
+                            <p className="mt-1 text-sm text-gray-600">
+                              {[item.journal, item.year, item.status]
+                                .filter(Boolean)
+                                .join(' · ')}
+                            </p>
+                          )}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
             <div className="space-y-4">
               {Array.isArray(faculty.sections) && faculty.sections.length > 0 ? (
                 faculty.sections.map((section, index) => (
@@ -125,7 +184,7 @@ export default function FacultyProfile() {
                 </p>
               )}
             </div>
-          </main>
+          </div>
         </div>
       </div>
     </>

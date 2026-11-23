@@ -7,6 +7,7 @@ import Loading from "../components/Loading.jsx";
 import SectionHeader from "../components/common/SectionHeader.jsx";
 import PageWrapper from "../components/common/PageWrapper.jsx";
 import { publicAPI } from "../lib/api.js";
+import SEO from "../components/SEO.jsx";
 
 const Events = () => {
   const [events, setEvents] = useState([]);
@@ -42,10 +43,16 @@ const Events = () => {
 
   return (
     <PageWrapper>
+      <SEO
+        title="Events"
+        description="Talks, workshops, conferences and seminars hosted by the Department of Computer Science & Engineering, LNMIIT Jaipur."
+        keywords="LNMIIT CSE events, workshops, seminars, technical talks Jaipur"
+      />
+
       <section className="container mx-auto px-4 py-16">
 
         {/* ✅ SINGLE HEADING */}
-        <SectionHeader title="Events" />
+        <SectionHeader as="h1" title="Events" />
 
         {/* ✅ ALL EVENTS IN ONE LIST */}
         {events.length > 0 ? (

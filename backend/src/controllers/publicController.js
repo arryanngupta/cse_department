@@ -1,6 +1,9 @@
 // src/controllers/publicController.js
 
 import { Op } from 'sequelize';
+import { parsePagination, buildMeta } from '../utils/pagination.js';
+import { servableFileOrNull } from '../utils/uploadPath.js';
+import { escapeLike } from '../utils/sql.js';
 import {
   Slider,
   People,
@@ -12,6 +15,7 @@ import {
   DirectoryEntry,
   InfoBlock,
   Research,
+  ResearchAuthor,
   Facility,
   ProgramSection,
   CurriculumSemester,
@@ -46,39 +50,31 @@ export const getSliders = async (req, res, next) => {
 /* ======================= PEOPLE LIST ======================= */
 export const getPeople = async (req, res, next) => {
   try {
-    const { designation, person_type, area, q, page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
+    const { designation, person_type, area, q } = req.query;
+    const { page, limit, offset } = parsePagination(req.query, { defaultLimit: 20 });
 
     const where = {};
 
-    if (designation) where.designation = { [Op.like]: `%${designation}%` };
+    if (designation) where.designation = { [Op.like]: `%${escapeLike(designation)}%` };
     if (person_type) where.person_type = person_type;
-    if (area) where.research_areas = { [Op.like]: `%${area}%` };
+    if (area) where.research_areas = { [Op.like]: `%${escapeLike(area)}%` };
 
     if (q) {
       where[Op.or] = [
-        { name: { [Op.like]: `%${q}%` } },
-        { designation: { [Op.like]: `%${q}%` } },
-        { research_areas: { [Op.like]: `%${q}%` } }
+        { name: { [Op.like]: `%${escapeLike(q)}%` } },
+        { designation: { [Op.like]: `%${escapeLike(q)}%` } },
+        { research_areas: { [Op.like]: `%${escapeLike(q)}%` } }
       ];
     }
 
     const { count, rows } = await People.findAndCountAll({
       where,
       order: [['order', 'ASC'], ['name', 'ASC']],
-      limit: parseInt(limit, 10),
-      offset: parseInt(offset, 10)
+      limit,
+      offset
     });
 
-    res.json({
-      data: rows,
-      meta: {
-        total: count,
-        page: parseInt(page, 10),
-        limit: parseInt(limit, 10),
-        totalPages: Math.ceil(count / limit)
-      }
-    });
+    res.json({ data: rows, meta: buildMeta(count, { page, limit }) });
   } catch (error) {
     next(error);
   }
@@ -123,7 +119,40 @@ export const getPersonBySlug = async (req, res, next) => {
     // NORMALIZE to frontend-ready LNMIIT schema
     const profile = normalizeFacultyProfile(person);
 
-    res.json({ data: profile });
+    // Research this person is relationally linked to, newest first. Kept as a
+    // separate query rather than an include so the normalizer above keeps
+    // seeing exactly the shape it expects.
+    const links = await ResearchAuthor.findAll({
+      where: { person_id: person.id },
+      include: [
+        {
+          model: Research,
+          as: 'research',
+          required: true,
+          attributes: ['id', 'title', 'category', 'journal', 'year', 'link', 'status'],
+        },
+      ],
+      order: [['author_order', 'ASC']],
+    });
+
+    const linkedResearch = links
+      .map((link) => {
+        const r = link.research;
+        return {
+          id: r.id,
+          title: r.title,
+          category: r.category,
+          journal: r.journal,
+          year: r.year,
+          link: r.link,
+          status: r.status,
+          role: link.role,
+          url: `/research/${r.id}`,
+        };
+      })
+      .sort((a, b) => String(b.year || '').localeCompare(String(a.year || '')));
+
+    res.json({ data: { ...profile, linkedResearch } });
   } catch (error) {
     next(error);
   }
@@ -132,8 +161,7 @@ export const getPersonBySlug = async (req, res, next) => {
 /* ======================= PROGRAMS ======================= */
 export const getPrograms = async (req, res, next) => {
   try {
-    const { page = 1, limit = 6 } = req.query;
-    const offset = (page - 1) * limit;
+    const { page, limit, offset } = parsePagination(req.query, { defaultLimit: 6 });
 
     const { count, rows } = await Program.findAndCountAll({
       order: [
@@ -141,18 +169,20 @@ export const getPrograms = async (req, res, next) => {
         ['display_order', 'ASC'],
         ['name', 'ASC']
       ],
-      limit: parseInt(limit, 10),
-      offset: parseInt(offset, 10)
+      limit,
+      offset
     });
 
-    res.json({
-      data: rows,
-      meta: {
-        total: count,
-        page: parseInt(page, 10),
-        totalPages: Math.ceil(count / limit)
-      }
+    // Null out a curriculum path whose file is not on disk, so the Programs
+    // page hides its download button with the `{path && ...}` guard it already
+    // has, rather than offering a link that 404s.
+    const programs = rows.map((row) => {
+      const plain = row.get({ plain: true });
+      plain.curriculum_pdf_path = servableFileOrNull(plain.curriculum_pdf_path);
+      return plain;
     });
+
+    res.json({ data: programs, meta: buildMeta(count, { page, limit }) });
 
   } catch (error) {
     next(error);
@@ -214,7 +244,9 @@ export const getProgramDetails = async (req, res, next) => {
       overview: program.overview,
       duration: program.duration,
       total_credits: program.total_credits,
-      curriculum_pdf_path: program.curriculum_pdf_path,
+      // Null when the stored file is missing, so the UI hides its download
+      // button instead of offering a link that 404s.
+      curriculum_pdf_path: servableFileOrNull(program.curriculum_pdf_path),
       sections: (program.sections || []).map(s => ({
         id: s.id,
         title: s.title,
@@ -237,19 +269,19 @@ export const getProgramDetails = async (req, res, next) => {
 
 export const getNews = async (req, res, next) => {
   try {
-    const { published = '1', page = 1, limit = 10 } = req.query;
-    const offset = (page - 1) * limit;
+    const { published = '1' } = req.query;
+    const { page, limit, offset } = parsePagination(req.query, { defaultLimit: 10 });
 
     const where = published === '1' ? { isPublished: true } : {};
 
     const { count, rows } = await News.findAndCountAll({
       where,
       order: [['date', 'DESC']],
-      limit: parseInt(limit, 10),
-      offset: parseInt(offset, 10)
+      limit,
+      offset
     });
 
-    res.json({ data: rows, meta: { total: count } });
+    res.json({ data: rows, meta: buildMeta(count, { page, limit }) });
   } catch (error) {
     next(error);
   }
@@ -270,33 +302,26 @@ export const getNewsById = async (req, res, next) => {
 
 export const getEvents = async (req, res, next) => {
   try {
-    const { q, page = 1, limit = 6 } = req.query;
-    const offset = (page - 1) * limit;
+    const { q } = req.query;
+    const { page, limit, offset } = parsePagination(req.query, { defaultLimit: 6 });
 
     const where = { isPublished: true };
 
     if (q) {
       where[Op.or] = [
-        { title: { [Op.like]: `%${q}%` } },
-        { description: { [Op.like]: `%${q}%` } }
+        { title: { [Op.like]: `%${escapeLike(q)}%` } },
+        { description: { [Op.like]: `%${escapeLike(q)}%` } }
       ];
     }
 
     const { count, rows } = await Event.findAndCountAll({
       where,
       order: [["startsAt", "DESC"]],
-      limit: +limit,
+      limit,
       offset
     });
 
-    res.json({
-      data: rows,
-      meta: {
-        total: count,
-        page: +page,
-        totalPages: Math.ceil(count / limit)
-      }
-    });
+    res.json({ data: rows, meta: buildMeta(count, { page, limit }) });
   } catch (e) {
     next(e);
   }
@@ -411,13 +436,46 @@ export const getResearch = async (req, res, next) => {
 
 export const getResearchById = async (req, res, next) => {
   try {
-    const research = await Research.findByPk(req.params.id);
+    const research = await Research.findByPk(req.params.id, {
+      include: [
+        {
+          model: ResearchAuthor,
+          as: 'authorLinks',
+          required: false,
+          // Only the fields needed to render a linked author name.
+          include: [
+            {
+              model: People,
+              as: 'person',
+              required: false,
+              attributes: ['id', 'name', 'slug', 'designation'],
+            },
+          ],
+        },
+      ],
+      order: [[{ model: ResearchAuthor, as: 'authorLinks' }, 'author_order', 'ASC']],
+    });
 
     if (!research) {
       return res.status(404).json({ error: 'Research not found' });
     }
 
-    res.json({ data: research });
+    const plain = research.get({ plain: true });
+
+    // Flatten to one list the UI can render directly: department members carry
+    // a slug to link to, external co-authors do not.
+    const contributors = (plain.authorLinks || []).map((link) => ({
+      name: link.person?.name || link.external_name,
+      slug: link.person?.slug || null,
+      designation: link.person?.designation || null,
+      role: link.role,
+      order: link.author_order,
+      internal: Boolean(link.person_id),
+    }));
+
+    delete plain.authorLinks;
+
+    res.json({ data: { ...plain, contributors } });
   } catch (error) {
     next(error);
   }

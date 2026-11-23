@@ -1,7 +1,8 @@
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { publicAPI } from "../lib/api.js";
 import useDetailData from "../hooks/useDetailData.js";
 import DetailPage from "../components/DetailPage.jsx";
+import { breadcrumbSchema } from "../lib/structuredData.js";
 import ResearchBlocks from "../components/ResearchBlocks.jsx";
 import { getPrimitiveDetails, firstNonEmpty } from "../utils/detailFields.js";
 
@@ -84,7 +85,45 @@ export default function ResearchDetail() {
       imageAlt={title}
       meta={meta}
       additionalFields={additionalFields}
+      structuredData={breadcrumbSchema([
+        { name: "Home", path: "/" },
+        { name: "Research", path: "/research" },
+        { name: title, path: `/research/${id}` },
+      ])}
     >
+      {/* Relationally linked contributors. Department members link through to
+          their profile; external co-authors render as plain text. */}
+      {Array.isArray(item?.contributors) && item.contributors.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Contributors
+          </h2>
+          <ul className="flex flex-wrap gap-2">
+            {item.contributors.map((c, i) => (
+              <li key={`${c.name}-${i}`}>
+                {c.slug ? (
+                  <Link
+                    to={`/people/${c.slug}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-[#8B0000]/30 bg-[#8B0000]/5 px-3 py-1.5 text-sm text-[#8B0000] transition hover:bg-[#8B0000]/10"
+                  >
+                    {c.name}
+                    {c.designation && (
+                      <span className="text-[11px] text-[#8B0000]/70">
+                        · {c.designation}
+                      </span>
+                    )}
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
+                    {c.name}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {item?.content_json && (
         <div>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">

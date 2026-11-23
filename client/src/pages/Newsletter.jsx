@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Loading from '../components/Loading.jsx';
 import { publicAPI } from '../lib/api.js';
+import SEO from "../components/SEO.jsx";
 
 const Newsletter = () => {
   const [newsletters, setNewsletters] = useState([]);
@@ -33,6 +34,12 @@ const Newsletter = () => {
 
   return (
     <div className="container mx-auto px-4 py-12">
+      <SEO
+        title="Newsletter"
+        description="Newsletters published by the Department of Computer Science & Engineering, LNMIIT Jaipur."
+        keywords="LNMIIT CSE newsletter, department magazine"
+      />
+
       <h1 className="text-4xl font-bold text-lnmiit-red mb-8">Department Newsletter</h1>
       <div className="h-1 w-24 bg-lnmiit-red mb-12"></div>
 

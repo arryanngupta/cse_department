@@ -1,0 +1,152 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend — lint and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - run: npm ci --legacy-peer-deps
+
+      - name: Lint
+        # Enforcing: errors are at zero. Eight react-hooks/exhaustive-deps
+        # warnings remain on correct code (the effects' dependency arrays
+        # already list everything their callbacks read), so they are reported
+        # but do not fail the build.
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          # Build-time only; the real value is set in Vercel.
+          VITE_API_BASE_URL: https://example.invalid
+
+  backend:
+    name: Backend — syntax and migrations
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci-root-password
+          MYSQL_DATABASE: lnmiit_cse_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci-root-password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      NODE_ENV: test
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_USER: root
+      DB_PASS: ci-root-password
+      DB_NAME: lnmiit_cse_ci
+      DB_SSL: 'false'
+      DB_LOGGING: 'false'
+      JWT_SECRET: ci-only-secret-at-least-32-characters-long
+      ORIGIN: http://localhost:3021
+      AI_PROVIDER: none
+      # The API suite performs failed logins on purpose; the production
+      # default of 10 per 15 min would lock the suite out of its own reruns.
+      AUTH_RATE_LIMIT_MAX: '1000'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci --legacy-peer-deps
+
+      - name: Check every source file parses
+        run: |
+          # ES modules, so --check per file rather than a project-wide tsc.
+          find src scripts tests -name '*.js' -o -name '*.mjs' \
+            | while read -r f; do node --check "$f" || exit 1; done
+          echo "all files parse"
+
+      - name: Run migrations against a clean database
+        run: npm run migrate
+
+      - name: Migrations are re-runnable
+        # With the SequelizeMeta tracking table a second pass must apply
+        # nothing. This catches a migration that fails to record itself.
+        run: npm run migrate
+
+      - name: Seed reference data
+        # The API suite signs in as the seeded admin, so a clean CI database
+        # needs this before the tests run.
+        run: npm run seed
+
+      - name: Verify no model/schema drift
+        run: |
+          node -e "
+          import('./src/db/models/index.js').then(async () => {
+            const { sequelize } = await import('./src/config/database.js');
+            const qi = sequelize.getQueryInterface();
+            let drift = 0;
+            for (const name of Object.keys(sequelize.models)) {
+              const M = sequelize.models[name];
+              const desc = await qi.describeTable(M.getTableName()).catch(() => null);
+              if (!desc) { console.log('MISSING TABLE ' + M.getTableName()); drift++; continue; }
+              const db = new Set(Object.keys(desc).map(c => c.toLowerCase()));
+              const miss = Object.values(M.getAttributes())
+                .map(a => (a.field || a.fieldName).toLowerCase())
+                .filter(c => !db.has(c));
+              if (miss.length) { console.log(M.getTableName() + ' missing: ' + miss.join(', ')); drift++; }
+            }
+            if (drift) { console.error(drift + ' table(s) drifted from their models'); process.exit(1); }
+            console.log('no model/schema drift');
+            process.exit(0);
+          });
+          "
+
+      - name: Start the server and run the API suite
+        run: |
+          npm start &
+          SERVER_PID=$!
+          # Wait for readiness rather than sleeping a fixed amount.
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3022/health >/dev/null && break
+            sleep 1
+          done
+          npm test
+          STATUS=$?
+          kill $SERVER_PID 2>/dev/null || true
+          exit $STATUS
+        env:
+          PORT: '3022'
+          BASE_URL: http://localhost:3022

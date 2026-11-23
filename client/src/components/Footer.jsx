@@ -85,7 +85,10 @@ const Footer = () => {
         <div className="mt-8 pt-8 border-t border-white/10 text-center text-sm text-gray-400">
           <p>Copyright © 2023–25 LNMIIT · All rights reserved · Last updated on: Nov 03, 2025</p>
           <p className="mt-2">
-            For web support: <a href="mailto:web.support@lnmiit.ac.in" className="text-[#A6192E] hover:text-[#7D0F22]">web.support@lnmiit.ac.in</a>
+            {/* The brand red (#A6192E) only reaches 2.68:1 against the dark
+                footer, below the 4.5:1 WCAG AA minimum. Underlined and light
+                so the link is still identifiable without relying on colour. */}
+            For web support: <a href="mailto:web.support@lnmiit.ac.in" className="text-gray-100 underline underline-offset-2 hover:text-white">web.support@lnmiit.ac.in</a>
           </p>
         </div>
       </div>

@@ -26,8 +26,37 @@ import {
 
 // 👉 IMPORT MODELS FOR SITEMAP
 import { People, Program, Research } from '../../db/models/index.js';
+import {
+  search,
+  suggestions,
+  categories as searchCategories,
+} from '../../controllers/searchController.js';
+import { askAssistant, assistantStatus } from '../../controllers/assistantController.js';
+import { aiLimiter } from '../../middleware/rateLimiter.js';
+import { optionalAuthenticate } from '../../middleware/optionalAuth.js';
+import {
+  getRegistrationStatus,
+  registerForEvent,
+} from '../../controllers/eventRegistrationController.js';
 
 const router = express.Router();
+
+/* =========================
+   SEARCH
+========================= */
+
+// Declared before the `/:slug`-style routes above would ever see them, so
+// "search" is never mistaken for a record identifier.
+router.get('/search', search);
+router.get('/search/suggestions', suggestions);
+router.get('/search/categories', searchCategories);
+
+/* =========================
+   AI ASSISTANT
+========================= */
+
+router.get('/assistant/status', assistantStatus);
+router.post('/assistant/ask', optionalAuthenticate, aiLimiter, askAssistant);
 
 /* =========================
    EXISTING PUBLIC ROUTES
@@ -42,6 +71,8 @@ router.get('/news', getNews);
 router.get('/news/:id', getNewsById);
 router.get('/events', getEvents);
 router.get('/events/:id', getEventById);
+router.get('/events/:id/registration', getRegistrationStatus);
+router.post('/events/:id/register', registerForEvent);
 router.get('/achievements', getAchievements);
 router.get('/achievements/:id', getAchievementById);
 router.get('/newsletters', getNewsletters);

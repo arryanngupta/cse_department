@@ -133,10 +133,12 @@ const People = () => {
 
   return (
     <>
+      {/* SEO appends the site name itself, so the title here is just the page.
+          The canonical is derived from the route. */}
       <SEO
-        title={`${pageTitle} | Department of Computer Science & Engineering | LNMIIT Jaipur`}
+        title={pageTitle}
         description={`Meet the ${pageTitle.toLowerCase()} of the Department of Computer Science & Engineering at LNMIIT Jaipur.`}
-        canonical="https://cse.lnmiit.ac.in/people"
+        keywords="LNMIIT CSE faculty, professors, computer science department staff, Jaipur"
       />
 
       <div className="container mx-auto px-4 py-10">

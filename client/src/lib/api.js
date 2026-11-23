@@ -18,8 +18,9 @@ api.interceptors.request.use(
     try {
       const token = localStorage.getItem('token');
       if (token) config.headers.Authorization = `Bearer ${token}`;
-    } catch (e) {
-      // ignore localStorage read errors
+    } catch {
+      // localStorage can throw in private-mode / blocked-cookie contexts;
+      // the request just goes out unauthenticated.
     }
     return config;
   },
@@ -33,8 +34,16 @@ api.interceptors.response.use(
     if (error?.response?.status === 401) {
       try {
         localStorage.removeItem('token');
-      } catch (e) { }
-      if (!window.location.pathname.includes('/admin/login')) {
+      } catch {
+        // Nothing to clean up if storage is unavailable.
+      }
+      // Some endpoints are reachable from the public site with an optional
+      // session — the assistant is one. A stale token there must not bounce a
+      // visitor who was only reading the website to the admin login page; the
+      // caller handles that 401 itself.
+      const skipRedirect = error?.config?.noAuthRedirect === true;
+
+      if (!skipRedirect && !window.location.pathname.includes('/admin/login')) {
         window.location.href = '/admin/login';
       }
     }
@@ -78,6 +87,9 @@ export const publicAPI = {
     api.get(`/public/info/${encodeURIComponent(key)}`),
 
   getResearch: (params) => api.get('/public/research', { params }),
+  // Was missing while ResearchDetail.jsx already called it, so the research
+  // detail page failed with "fetcher is not a function" on every visit.
+  getResearchById: (id) => api.get(`/public/research/${id}`),
   getFacilities: (params) => api.get('/public/facilities', { params }),
 
   // Opportunity
@@ -86,6 +98,21 @@ export const publicAPI = {
 
   getFacilityById: (id) => api.get(`/public/facilities/${id}`),
   getAchievementById: (id) => api.get(`/public/achievements/${id}`),
+
+  // Event registration
+  eventRegistrationStatus: (id) => api.get(`/public/events/${id}/registration`),
+  registerForEvent: (id, payload) => api.post(`/public/events/${id}/register`, payload),
+
+  // Site-wide search
+  search: (params, config) => api.get('/public/search', { params, ...config }),
+  searchSuggestions: (q, config) =>
+    api.get('/public/search/suggestions', { params: { q }, ...config }),
+  searchCategories: () => api.get('/public/search/categories'),
+
+  // AI assistant
+  assistantStatus: () => api.get('/public/assistant/status'),
+  askAssistant: (question, config) =>
+    api.post('/public/assistant/ask', { question }, { noAuthRedirect: true, ...config }),
 };
 
 
@@ -93,6 +120,55 @@ export const publicAPI = {
 // ADMIN APIs (named export)
 // ========================
 export const adminAPI = {
+  // Dashboard analytics
+  getAnalyticsOverview: () => api.get('/admin/analytics/overview'),
+  getAnalyticsTrends: (params) => api.get('/admin/analytics/trends', { params }),
+  getAnalyticsActivity: (params) => api.get('/admin/analytics/activity', { params }),
+  getAnalyticsHealth: () => api.get('/admin/analytics/health'),
+
+  // Media library
+  getMedia: (params) => api.get('/admin/media', { params }),
+  syncMedia: () => api.post('/admin/media/sync'),
+  updateMedia: (id, payload) => api.put(`/admin/media/${id}`, payload),
+  getMediaUsage: (id) => api.get(`/admin/media/${id}/usage`),
+  deleteMedia: (id) => api.delete(`/admin/media/${id}`),
+  getBrokenMediaReferences: () => api.get('/admin/media/broken-references'),
+
+  // Submissions / approval workflow
+  createSubmission: (payload) => api.post('/admin/submissions', payload),
+  getSubmissions: (params) => api.get('/admin/submissions', { params }),
+  getSubmission: (id) => api.get(`/admin/submissions/${id}`),
+  reviewSubmission: (id, payload) => api.post(`/admin/submissions/${id}/review`, payload),
+  withdrawSubmission: (id) => api.post(`/admin/submissions/${id}/withdraw`),
+
+  // Version history
+  getRecentVersions: (params) => api.get('/admin/versions', { params }),
+  getVersions: (resource, id, params) => api.get(`/admin/versions/${resource}/${id}`, { params }),
+  getVersion: (resource, id, version) => api.get(`/admin/versions/${resource}/${id}/${version}`),
+  restoreVersion: (resource, id, version) => api.post(`/admin/versions/${resource}/${id}/${version}/restore`),
+
+  // Scheduled publication
+  getSchedule: () => api.get('/admin/schedule'),
+  setSchedule: (resource, id, payload) => api.put(`/admin/schedule/${resource}/${id}`, payload),
+  runScheduler: () => api.post('/admin/schedule/run'),
+
+  // CSV import
+  getImportOptions: () => api.get('/admin/import'),
+  downloadImportTemplate: (resource) =>
+    api.get(`/admin/import/${resource}/template`, { responseType: 'text' }),
+  previewImport: (resource, csv) => api.post(`/admin/import/${resource}/preview`, { csv }),
+  applyImport: (resource, csv, allowPartial) => api.post(`/admin/import/${resource}/apply`, { csv, allowPartial }),
+
+  // Audit log (read-only)
+  getAuditLogs: (params) => api.get('/admin/audit-logs', { params }),
+  getAuditLogSummary: () => api.get('/admin/audit-logs/summary'),
+
+  // Event registrations
+  getEventRegistrations: (id, params) => api.get(`/admin/events/${id}/registrations`, { params }),
+  updateEventRegistration: (regId, payload) => api.put(`/admin/events/registrations/${regId}`, payload),
+  deleteEventRegistration: (regId) => api.delete(`/admin/events/registrations/${regId}`),
+  exportEventRegistrationsUrl: (id) => `/admin/events/${id}/registrations.csv`,
+
   // Sliders
   getSliders: (params) => api.get('/admin/sliders', { params }),
   createSlider: (formData) =>

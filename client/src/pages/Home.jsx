@@ -10,6 +10,7 @@ import Loading from "../components/Loading.jsx";
 import SectionHeader from "../components/common/SectionHeader.jsx";
 import PageWrapper from "../components/common/PageWrapper.jsx";
 import { publicAPI } from "../lib/api.js";
+import SEO from "../components/SEO.jsx";
 
 const Home = () => {
   const [sliders, setSliders] = useState([]);
@@ -60,6 +61,11 @@ const Home = () => {
 
   return (
     <PageWrapper noPadding>
+      <SEO
+        description="Department of Computer Science & Engineering at LNMIIT Jaipur — faculty, B.Tech and M.Tech programmes, research, facilities, events and achievements."
+        keywords="LNMIIT, CSE department, computer science Jaipur, B.Tech CSE, engineering college Rajasthan"
+      />
+
       {/* ===================== HERO SECTION ===================== */}
       <div className="relative w-full min-h-[75vh] md:min-h-[85vh] overflow-hidden">
         <Slider slides={sliders} />
@@ -68,7 +74,13 @@ const Home = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
-          className="absolute inset-0 flex flex-col justify-center items-center text-center px-4 bg-gradient-to-t from-black/60 via-black/30 to-transparent"
+          /* The scrim was from-black/60 via-black/30. The heading sits in the
+             middle band, so on a bright slider photo white-on-black/30 fell
+             well under 4.5:1. Deepened to /45 there. Note this still depends
+             on the uploaded image: a near-white photo would need roughly /80
+             to guarantee AA, which would read as a solid panel rather than the
+             intended frosted glass. */
+          className="absolute inset-0 flex flex-col justify-center items-center text-center px-4 bg-gradient-to-t from-black/70 via-black/45 to-black/20"
         >
           <div className="backdrop-blur-lg bg-white/10 p-8 md:p-10 rounded-3xl shadow-xl border border-white/30 max-w-3xl">
             <motion.h1 className="text-4xl md:text-6xl font-merriweather font-bold text-white">
@@ -171,7 +183,7 @@ const Home = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {events.slice(0, 3).map((achievement) => (
+          {achievements.slice(0, 3).map((achievement) => (
             <AchievementCard key={achievement.id} achievement={achievement} />
           ))}
         </div>

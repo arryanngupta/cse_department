@@ -267,12 +267,16 @@ export const createPerson = async (req, res, next) => {
 
     const order = Number(req.body.order) || 0;
 
-    let slug = generateSlug(name);
+    // 'person' is the fallback for a name that yields no sluggable characters
+    // at all — punctuation only, or a non-Latin script. Without it the slug is
+    // '' and the loop below produces "-1", "-2".
+    const baseSlug = generateSlug(name, 'person');
+    let slug = baseSlug;
     let exists = await People.findOne({ where: { slug } });
     let counter = 1;
 
     while (exists) {
-      slug = `${generateSlug(name)}-${counter++}`;
+      slug = `${baseSlug}-${counter++}`;
       exists = await People.findOne({ where: { slug } });
     }
 
@@ -343,7 +347,8 @@ export const updatePerson = async (req, res, next) => {
 
       // FIX: also handle NULL slug case
       if (!person.slug || name !== person.name) {
-        let newSlug = generateSlug(name);
+        const baseNewSlug = generateSlug(name, 'person');
+        let newSlug = baseNewSlug;
 
         let exists = await People.findOne({
           where: { slug: newSlug, id: { [Op.ne]: id } }
@@ -351,7 +356,7 @@ export const updatePerson = async (req, res, next) => {
 
         let counter = 1;
         while (exists) {
-          newSlug = `${generateSlug(name)}-${counter++}`;
+          newSlug = `${baseNewSlug}-${counter++}`;
           exists = await People.findOne({
             where: { slug: newSlug, id: { [Op.ne]: id } }
           });

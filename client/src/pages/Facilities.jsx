@@ -8,6 +8,7 @@ import Loading from "../components/Loading.jsx";
 import PageWrapper from "../components/common/PageWrapper.jsx";
 import Pagination from "../components/common/Pagination.jsx";
 import { getImageUrl } from "../utils/imageUtils.js";
+import SEO from "../components/SEO.jsx";
 
 const Facilities = () => {
   const [facilities, setFacilities] = useState([]);
@@ -59,6 +60,12 @@ const Facilities = () => {
 
   return (
     <PageWrapper title="Facilities">
+      <SEO
+        title="Facilities"
+        description="Laboratories, computing infrastructure and research facilities of the Department of Computer Science & Engineering, LNMIIT Jaipur."
+        keywords="LNMIIT CSE labs, computing facilities, research infrastructure"
+      />
+
       <div className="mb-10 text-center">
         <h1 className="text-4xl font-bold text-[#A6192E] mb-2">Facilities</h1>
         <div className="h-1 w-24 bg-[#A6192E] mx-auto rounded-full"></div>
@@ -97,6 +104,7 @@ const Facilities = () => {
                   {item.image_path && (
                     <img
                       src={getImageUrl(item.image_path)}
+                      alt={item.name || "Facility"}
                       className="w-full h-48 object-cover"
                     />
                   )}

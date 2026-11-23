@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import DashboardAnalytics from "../../components/admin/DashboardAnalytics.jsx";
 import { Link } from 'react-router-dom';
 import { adminAPI, authAPI } from '../../lib/api.js';
 
@@ -161,6 +162,10 @@ const Dashboard = () => {
           ))}
         </div>
       )}
+
+      <div className="mt-12">
+        <DashboardAnalytics />
+      </div>
 
       <div className="mt-12 bg-white rounded-lg shadow-md p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Quick Actions</h2>

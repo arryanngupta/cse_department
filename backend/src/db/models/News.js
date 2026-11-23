@@ -31,7 +31,11 @@ const News = sequelize.define('News', {
   isPublished: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
-  }
+  },
+  /* ---- Scheduled publication (migration 0030) ---- */
+  // Null = not scheduled. The scheduler worker flips the live flag when due.
+  publish_at: { type: DataTypes.DATE, allowNull: true },
+  unpublish_at: { type: DataTypes.DATE, allowNull: true }
 }, {
   tableName: 'news',
   timestamps: true

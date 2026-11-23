@@ -50,7 +50,7 @@ export default function ResearchManagement() {
     try {
       const res = await adminAPI.getResearch();
       setResearchList(res.data.data || []);
-    } catch (err) {
+    } catch {
       alert("Failed to load research");
     } finally {
       setLoading(false);
@@ -214,7 +214,7 @@ export default function ResearchManagement() {
       }
       fetchResearch();
       closeModal();
-    } catch (err) {
+    } catch {
       alert("Failed to save research");
     }
   };

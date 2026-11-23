@@ -3,6 +3,59 @@ import { authenticate, requireAdmin } from '../../middleware/auth.js';
 import { uploadImage, uploadPDF } from '../../config/multer.js';
 import { uploadLimiter } from '../../middleware/rateLimiter.js';
 import { requireOwnFacultyProfileOrAdmin } from '../../middleware/rbac.js';
+import { auditLog } from '../../middleware/auditLog.js';
+import { versionCapture } from '../../middleware/versionCapture.js';
+import {
+  listVersions,
+  getVersion,
+  restoreVersion,
+  recentVersions,
+} from '../../controllers/versionController.js';
+import {
+  getSchedule,
+  setSchedule,
+  runSchedulerNow,
+} from '../../controllers/scheduleController.js';
+import {
+  createSubmission,
+  listSubmissions,
+  getSubmission,
+  reviewSubmission,
+  withdrawSubmission,
+} from '../../controllers/submissionController.js';
+import {
+  importOptions,
+  downloadTemplate,
+  previewImport,
+  applyImport,
+} from '../../controllers/importController.js';
+import {
+  listMedia,
+  syncMedia,
+  updateMedia,
+  mediaUsage,
+  deleteMedia,
+  brokenReferences,
+} from '../../controllers/mediaController.js';
+import {
+  overview,
+  trends,
+  activity,
+  contentHealth,
+} from '../../controllers/analyticsController.js';
+import { listAuditLogs, auditLogSummary } from '../../controllers/auditLogController.js';
+import {
+  listResearchAuthors,
+  addResearchAuthor,
+  updateResearchAuthor,
+  removeResearchAuthor,
+} from '../../controllers/researchAuthorController.js';
+import {
+  listRegistrations,
+  updateRegistration,
+  deleteRegistration,
+  exportRegistrations,
+} from '../../controllers/eventRegistrationController.js';
 
 import {
   createSlider, updateSlider, deleteSlider, getAllSliders,
@@ -33,6 +86,78 @@ const router = express.Router();
    GLOBAL AUTH
 ========================= */
 router.use(authenticate);
+
+// Records every state-changing admin request. After authenticate so the
+// actor is known; before the routes so new endpoints are covered by default.
+router.use(auditLog);
+
+// Snapshots the pre-change state of versionable records. Must run before the
+// handlers, since the previous content is unreadable once the UPDATE commits.
+router.use(versionCapture);
+
+/* =========================
+   VERSION HISTORY
+========================= */
+/* =========================
+   DASHBOARD ANALYTICS
+========================= */
+router.get('/analytics/overview', requireAdmin, overview);
+router.get('/analytics/trends', requireAdmin, trends);
+router.get('/analytics/activity', requireAdmin, activity);
+router.get('/analytics/health', requireAdmin, contentHealth);
+
+/* =========================
+   MEDIA LIBRARY
+
+   Specific paths before '/media/:id' so 'sync' and 'broken-references' are
+   not captured as ids.
+========================= */
+router.post('/media/sync', requireAdmin, syncMedia);
+router.get('/media/broken-references', requireAdmin, brokenReferences);
+router.get('/media', requireAdmin, listMedia);
+router.get('/media/:id/usage', requireAdmin, mediaUsage);
+router.put('/media/:id', requireAdmin, updateMedia);
+router.delete('/media/:id', requireAdmin, deleteMedia);
+
+/* =========================
+   CSV IMPORT (preview before apply)
+========================= */
+router.get('/import', requireAdmin, importOptions);
+router.get('/import/:resource/template', requireAdmin, downloadTemplate);
+router.post('/import/:resource/preview', requireAdmin, previewImport);
+router.post('/import/:resource/apply', requireAdmin, applyImport);
+
+/* =========================
+   CONTENT SUBMISSIONS (APPROVAL WORKFLOW)
+
+   Deliberately NOT behind requireAdmin: faculty must be able to submit and
+   track their own changes. Per-action authorisation is enforced inside the
+   controller, which is the only place that knows whose profile a submission
+   targets. Reviewing stays admin-only.
+========================= */
+router.post('/submissions', createSubmission);
+router.get('/submissions', listSubmissions);
+router.get('/submissions/:id', getSubmission);
+router.post('/submissions/:id/withdraw', withdrawSubmission);
+router.post('/submissions/:id/review', requireAdmin, reviewSubmission);
+
+/* =========================
+   SCHEDULED PUBLICATION
+========================= */
+router.get('/schedule', requireAdmin, getSchedule);
+router.post('/schedule/run', requireAdmin, runSchedulerNow);
+router.put('/schedule/:resource/:id', requireAdmin, setSchedule);
+
+router.get('/versions', requireAdmin, recentVersions);
+router.get('/versions/:resource/:id', requireAdmin, listVersions);
+router.get('/versions/:resource/:id/:version', requireAdmin, getVersion);
+router.post('/versions/:resource/:id/:version/restore', requireAdmin, restoreVersion);
+
+/* =========================
+   AUDIT LOG (SUPER ADMIN VIEW)
+========================= */
+router.get('/audit-logs/summary', requireAdmin, auditLogSummary);
+router.get('/audit-logs', requireAdmin, listAuditLogs);
 
 /* =========================
    SLIDERS (ADMIN ONLY)
@@ -117,6 +242,12 @@ router.post('/events', requireAdmin, uploadLimiter, uploadImage('banner'), creat
 router.put('/events/:id', requireAdmin, uploadLimiter, uploadImage('banner'), updateEvent);
 router.delete('/events/:id', requireAdmin, deleteEvent);
 
+/* ---- Event registrations (specific paths before ':id' patterns) ---- */
+router.put('/events/registrations/:registrationId', requireAdmin, updateRegistration);
+router.delete('/events/registrations/:registrationId', requireAdmin, deleteRegistration);
+router.get('/events/:id/registrations.csv', requireAdmin, exportRegistrations);
+router.get('/events/:id/registrations', requireAdmin, listRegistrations);
+
 /* =========================
    ACHIEVEMENTS
 ========================= */
@@ -156,6 +287,15 @@ router.get('/research', requireAdmin, getAllResearch);
 router.post('/research', requireAdmin, uploadLimiter, uploadImage('image'), createResearch);
 router.put('/research/:id', requireAdmin, uploadLimiter, uploadImage('image'), updateResearch);
 router.delete('/research/:id', requireAdmin, deleteResearch);
+
+/* ---- Research authorship links ---------------------------------------
+ * The '/research/authors/:linkId' routes are declared before '/research/:id'
+ * patterns that could otherwise capture "authors" as an id.
+ */
+router.put('/research/authors/:linkId', requireAdmin, updateResearchAuthor);
+router.delete('/research/authors/:linkId', requireAdmin, removeResearchAuthor);
+router.get('/research/:id/authors', requireAdmin, listResearchAuthors);
+router.post('/research/:id/authors', requireAdmin, addResearchAuthor);
 
 /* =========================
    FACILITIES

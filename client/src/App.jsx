@@ -2,45 +2,94 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 
 // ===== Public Pages =====
-import Home from "./pages/Home.jsx";
-import People from "./pages/People.jsx";
-import FacultyProfile from "./pages/FacultyProfile.jsx";
-import Programs from "./pages/Programs.jsx";
-import Newsletter from "./pages/Newsletter.jsx";
-import Achievements from "./pages/Achievements.jsx";
-import Events from "./pages/Events.jsx";
-import EventDetail from "./pages/EventDetail.jsx";
-import News from "./pages/News.jsx";
-import NewsDetail from "./pages/NewsDetail.jsx";
-import ResearchDetail from "./pages/ResearchDetail.jsx";
-import FacilityDetail  from "./pages/FacilityDetail.jsx";
-import AchievementDetail from "./pages/AchievementDetail.jsx";
-import OpportunityDetail from "./pages/OpportunityDetail.jsx";
-import Directory from "./pages/Directory.jsx";
-import Research from "./pages/Research.jsx";
-import Facilities from "./pages/Facilities.jsx";
-import Opportunities from "./pages/Opportunities.jsx";
+const Home = lazy(() => import("./pages/Home.jsx"));
+const People = lazy(() => import("./pages/People.jsx"));
+const FacultyProfile = lazy(() => import("./pages/FacultyProfile.jsx"));
+const Programs = lazy(() => import("./pages/Programs.jsx"));
+const Newsletter = lazy(() => import("./pages/Newsletter.jsx"));
+const Achievements = lazy(() => import("./pages/Achievements.jsx"));
+const Events = lazy(() => import("./pages/Events.jsx"));
+const EventDetail = lazy(() => import("./pages/EventDetail.jsx"));
+const News = lazy(() => import("./pages/News.jsx"));
+const NewsDetail = lazy(() => import("./pages/NewsDetail.jsx"));
+const ResearchDetail = lazy(() => import("./pages/ResearchDetail.jsx"));
+const FacilityDetail = lazy(() => import("./pages/FacilityDetail.jsx"));
+const AchievementDetail = lazy(() => import("./pages/AchievementDetail.jsx"));
+const OpportunityDetail = lazy(() => import("./pages/OpportunityDetail.jsx"));
+const Directory = lazy(() => import("./pages/Directory.jsx"));
+const Research = lazy(() => import("./pages/Research.jsx"));
+const Facilities = lazy(() => import("./pages/Facilities.jsx"));
+const Opportunities = lazy(() => import("./pages/Opportunities.jsx"));
+const SearchResults = lazy(() => import("./pages/SearchResults.jsx"));
+import PublicAssistant from "./components/common/PublicAssistant.jsx";
 
 // ===== Admin Pages =====
-import AdminLogin from "./pages/Admin/Login.jsx";
-import AdminLayout from "./pages/Admin/Layout.jsx";
-import Dashboard from "./pages/Admin/Dashboard.jsx";
-import SliderManagement from "./pages/Admin/SliderManagement.jsx";
-import PeopleManagement from "./pages/Admin/PeopleManagement.jsx";
-import ChangePassword from "./pages/Admin/ChangePassword.jsx";
-import ProgramsManagement from "./pages/Admin/ProgramsManagement.jsx";
-import NewsManagement from "./pages/Admin/NewsManagement.jsx";
-import EventsManagement from "./pages/Admin/EventsManagement.jsx";
-import AchievementsManagement from "./pages/Admin/AchievementsManagement.jsx";
-import NewsletterManagement from "./pages/Admin/NewsletterManagement.jsx";
-import DirectoryManagement from "./pages/Admin/DirectoryManagement.jsx";
-import InfoBlocksManagement from "./pages/Admin/InfoBlocksManagement.jsx";
-import ResearchManagement from "./pages/Admin/ResearchManagement.jsx";
-import FacilitiesManagement from "./pages/Admin/FacilitiesManagement.jsx";
-import OpportunitiesManagement from "./pages/Admin/OpportunitiesManagement.jsx";
+const AdminLogin = lazy(() => import("./pages/Admin/Login.jsx"));
+const AdminLayout = lazy(() => import("./pages/Admin/Layout.jsx"));
+const Dashboard = lazy(() => import("./pages/Admin/Dashboard.jsx"));
+const SliderManagement = lazy(() => import("./pages/Admin/SliderManagement.jsx"));
+const PeopleManagement = lazy(() => import("./pages/Admin/PeopleManagement.jsx"));
+const ChangePassword = lazy(() => import("./pages/Admin/ChangePassword.jsx"));
+const ProgramsManagement = lazy(() => import("./pages/Admin/ProgramsManagement.jsx"));
+const NewsManagement = lazy(() => import("./pages/Admin/NewsManagement.jsx"));
+const EventsManagement = lazy(() => import("./pages/Admin/EventsManagement.jsx"));
+const AchievementsManagement = lazy(() => import("./pages/Admin/AchievementsManagement.jsx"));
+const NewsletterManagement = lazy(() => import("./pages/Admin/NewsletterManagement.jsx"));
+const DirectoryManagement = lazy(() => import("./pages/Admin/DirectoryManagement.jsx"));
+const InfoBlocksManagement = lazy(() => import("./pages/Admin/InfoBlocksManagement.jsx"));
+const ResearchManagement = lazy(() => import("./pages/Admin/ResearchManagement.jsx"));
+const FacilitiesManagement = lazy(() => import("./pages/Admin/FacilitiesManagement.jsx"));
+const OpportunitiesManagement = lazy(() => import("./pages/Admin/OpportunitiesManagement.jsx"));
+const AuditLogs = lazy(() => import("./pages/Admin/AuditLogs.jsx"));
+const MediaLibrary = lazy(() => import("./pages/Admin/MediaLibrary.jsx"));
+const VersionHistory = lazy(() => import("./pages/Admin/VersionHistory.jsx"));
+const Submissions = lazy(() => import("./pages/Admin/Submissions.jsx"));
+const ImportData = lazy(() => import("./pages/Admin/ImportData.jsx"));
+const Scheduled = lazy(() => import("./pages/Admin/Scheduled.jsx"));
+
+/**
+ * Shell shared by every public route: header, main landmark, footer.
+ *
+ * The skip link is the first focusable element on the page, so a keyboard or
+ * screen-reader user can jump past the navigation (which has nested dropdowns
+ * and is long to tab through) straight to the content.
+ */
+function PublicLayout({ children }) {
+  return (
+    <>
+      <a href="#main-content" className="skip-to-content">
+        Skip to main content
+      </a>
+      <Navbar />
+      {/* tabIndex -1 so the skip link can actually move focus here, not just
+          scroll. Without it the browser scrolls but focus stays in the nav. */}
+      <main id="main-content" tabIndex={-1}>
+        {children}
+      </main>
+      <Footer />
+    </>
+  );
+}
+
+/** Shown while a route's chunk is fetched. */
+function RouteFallback() {
+  return (
+    <div
+      className="flex min-h-[50vh] items-center justify-center"
+      role="status"
+      aria-live="polite"
+    >
+      <span className="sr-only">Loading page…</span>
+      <div
+        aria-hidden="true"
+        className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-[#8B0000]"
+      />
+    </div>
+  );
+}
 
 function App() {
   useEffect(() => {
@@ -68,104 +117,90 @@ function App() {
 
   return (
     <Router>
+      {/* Route components are code-split, so a Suspense boundary is required.
+          The fallback is deliberately minimal — a full-page spinner on every
+          navigation reads as slower than a brief blank content area. */}
+      <Suspense fallback={<RouteFallback />}>
       <Routes>
         {/* ================= PUBLIC ROUTES ================= */}
 
         <Route
           path="/"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <Home />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
 
         <Route
           path="/people"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <People />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
 
         <Route
           path="/programs"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <Programs />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
 
         <Route
           path="/research"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <Research />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
 
         <Route
           path="/facilities"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <Facilities />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
 
         <Route
           path="/newsletter"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <Newsletter />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
 
         <Route
           path="/achievements"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <Achievements />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
 
         <Route
           path="/achievements/students"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <Achievements category="student" />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
         <Route
           path="/achievements/faculty"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <Achievements category="faculty" />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
 
@@ -173,33 +208,27 @@ function App() {
         <Route
           path="/events"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <Events />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
 
         <Route
           path="/news"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <News />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
 
         <Route
           path="/directory"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <Directory />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
 
@@ -208,22 +237,18 @@ function App() {
         <Route
           path="/people/:slug"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <FacultyProfile />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
 
         <Route
           path="/news/:id"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <NewsDetail />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
 
@@ -231,61 +256,49 @@ function App() {
         <Route
           path="/events/:id"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <EventDetail />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
         <Route
           path="/news/:id"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <NewsDetail  />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
         <Route
           path="/research/:id"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <ResearchDetail  />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
         <Route
           path="/facilities/:id"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <FacilityDetail  />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
         <Route
           path="/achievements/:id"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <AchievementDetail  />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
         <Route
           path="/opportunities/:id"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <OpportunityDetail   />
-              <Footer />
-            </>
+            </PublicLayout>
           }
         />
 
@@ -293,11 +306,18 @@ function App() {
         <Route
           path="/opportunities"
           element={
-            <>
-              <Navbar />
+            <PublicLayout>
               <Opportunities />
-              <Footer />
-            </>
+            </PublicLayout>
+          }
+        />
+
+        <Route
+          path="/search"
+          element={
+            <PublicLayout>
+              <SearchResults />
+            </PublicLayout>
           }
         />
 
@@ -321,8 +341,18 @@ function App() {
           <Route path="directory" element={<DirectoryManagement />} />
           <Route path="info-blocks" element={<InfoBlocksManagement />} />
           <Route path="opportunities" element={<OpportunitiesManagement />} />
+          <Route path="audit-logs" element={<AuditLogs />} />
+          <Route path="media" element={<MediaLibrary />} />
+          <Route path="versions" element={<VersionHistory />} />
+          <Route path="submissions" element={<Submissions />} />
+          <Route path="import" element={<ImportData />} />
+          <Route path="scheduled" element={<Scheduled />} />
         </Route>
       </Routes>
+      </Suspense>
+
+      {/* Inside Router so it can use navigation; hidden on /admin. */}
+      <PublicAssistant />
     </Router>
   );
 }

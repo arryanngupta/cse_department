@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { publicAPI } from "../lib/api.js";
 import useDetailData from "../hooks/useDetailData.js";
 import DetailPage from "../components/DetailPage.jsx";
+import { breadcrumbSchema } from "../lib/structuredData.js";
 import { firstNonEmpty, getPrimitiveDetails } from "../utils/detailFields.js";
 
 export default function OpportunityDetail() {
@@ -46,6 +47,11 @@ export default function OpportunityDetail() {
       imageAlt={title}
       meta={meta}
       additionalFields={additionalFields}
+      structuredData={breadcrumbSchema([
+        { name: "Home", path: "/" },
+        { name: "Opportunities", path: "/opportunities" },
+        { name: title, path: `/opportunities/${id}` },
+      ])}
     >
       {item?.description && (
         <div>

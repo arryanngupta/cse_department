@@ -31,3 +31,53 @@ html {
   background: none !important;
   box-shadow: none !important;
 }
+
+/* ---- Accessibility ----------------------------------------------------
+   Added in the WCAG pass. Kept in plain CSS rather than utility classes
+   because these are global behaviours, not per-element styling.
+*/
+
+/* Keyboard users need a way past the mega-menu to the page content. Visible
+   only while focused, so it costs sighted mouse users nothing. */
+.skip-to-content {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 100;
+  background: #8B0000;
+  color: #fff;
+  padding: 0.625rem 1rem;
+  border-radius: 0 0 0.5rem 0.5rem;
+  font-weight: 600;
+  transition: top 0.15s ease-in;
+}
+.skip-to-content:focus {
+  top: 0;
+}
+
+/* A visible focus ring on every interactive element. Browsers only show one
+   by default for keyboard navigation, and several components here previously
+   removed it with focus:outline-none without providing a replacement. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #8B0000;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Respect a reduced-motion preference: the site uses Framer Motion
+   transitions throughout, which can cause discomfort or nausea. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

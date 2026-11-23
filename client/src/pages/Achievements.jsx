@@ -6,6 +6,7 @@ import Loading from "../components/Loading.jsx";
 import SectionHeader from "../components/common/SectionHeader.jsx";
 import PageWrapper from "../components/common/PageWrapper.jsx";
 import { publicAPI } from "../lib/api.js";
+import SEO from "../components/SEO.jsx";
 
 const Achievements = () => {
   const location = useLocation();
@@ -44,8 +45,14 @@ const Achievements = () => {
 
   return (
     <PageWrapper>
+      <SEO
+        title="Achievements"
+        description="Awards, recognitions and milestones of students and faculty of the Department of Computer Science & Engineering, LNMIIT Jaipur."
+        keywords="LNMIIT CSE achievements, student awards, faculty recognition"
+      />
+
       <section className="container mx-auto px-4 pb-16">
-        <SectionHeader title="Achievements" />
+        <SectionHeader as="h1" title="Achievements" />
 
         <div className="flex justify-center gap-4 mt-8 mb-10">
           {["student", "faculty"].map((cat) => (

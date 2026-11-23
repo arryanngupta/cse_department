@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { publicAPI } from "../lib/api.js";
 import Loading from "../components/Loading.jsx";
+import SEO from "../components/SEO.jsx";
 
 export default function Research() {
   const [research, setResearch] = useState([]);
@@ -259,6 +260,12 @@ export default function Research() {
 
   return (
     <div className="bg-white px-8 py-12">
+      <SEO
+        title="Research"
+        description="Publications, projects, patents and research areas of the Department of Computer Science & Engineering, LNMIIT Jaipur."
+        keywords="LNMIIT CSE research, publications, patents, research projects"
+      />
+
       <div className="max-w-6xl mx-auto">
         {/* HEADER */}
         <div className="text-center mb-16">
@@ -446,7 +453,9 @@ export default function Research() {
                           className="h-20 mx-auto object-contain"
                         />
                       ) : (
-                        <div className="h-20 mx-auto flex items-center justify-center border rounded bg-gray-50 text-xs text-gray-400">
+                        // gray-400 on gray-50 is 2.49:1, below the 4.5:1 AA
+                        // minimum; gray-600 clears it at 5.8:1.
+                        <div className="h-20 mx-auto flex items-center justify-center border rounded bg-gray-50 text-xs text-gray-600">
                           No image
                         </div>
                       )}

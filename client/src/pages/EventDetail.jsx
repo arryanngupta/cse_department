@@ -2,7 +2,9 @@ import { useParams } from "react-router-dom";
 import { publicAPI } from "../lib/api.js";
 import useDetailData from "../hooks/useDetailData.js";
 import DetailPage from "../components/DetailPage.jsx";
+import EventRegistrationForm from "../components/common/EventRegistrationForm.jsx";
 import { formatDateTime, getPrimitiveDetails, firstNonEmpty } from "../utils/detailFields.js";
+import { eventSchema, breadcrumbSchema } from "../lib/structuredData.js";
 
 export default function EventDetail() {
   const { id } = useParams();
@@ -24,6 +26,11 @@ export default function EventDetail() {
     "endsAt",
     "venue",
     "isPublished",
+    // Registration config is operational, not visitor-facing: the form above
+    // already communicates capacity and deadline in readable form.
+    "registration_open",
+    "registration_capacity",
+    "registration_deadline",
   ]);
 
   return (
@@ -41,6 +48,14 @@ export default function EventDetail() {
       imageAlt={title}
       meta={meta}
       additionalFields={additionalFields}
+      structuredData={[
+        eventSchema(item),
+        breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Events", path: "/events" },
+          { name: title, path: `/events/${id}` },
+        ]),
+      ].filter(Boolean)}
     >
       {item?.description && (
         <div>
@@ -63,6 +78,7 @@ export default function EventDetail() {
           </a>
         </div>
       )}
+      <EventRegistrationForm eventId={id} />
     </DetailPage>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { publicAPI } from '../lib/api.js';
 import { ChevronDown, ChevronUp, FileText, ArrowRight } from 'lucide-react';
+import SEO from "../components/SEO.jsx";
 
 const GROUP_ORDER = ['faculty', 'research', 'non_academic', 'general'];
 
@@ -464,6 +465,12 @@ function Opportunities() {
 
   return (
     <div className="bg-gradient-to-b from-white to-slate-50 px-4 py-10 md:px-8 lg:px-12">
+      <SEO
+        title="Opportunities"
+        description="Internships, assistantships, PhD positions and other opportunities at the Department of Computer Science & Engineering, LNMIIT Jaipur."
+        keywords="LNMIIT CSE opportunities, PhD positions, internships, research assistantship"
+      />
+
       <div className="mx-auto max-w-6xl">
         <div className="mb-14">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-red-800/80">

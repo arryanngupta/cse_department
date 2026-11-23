@@ -3,6 +3,7 @@ import { publicAPI } from "../lib/api.js";
 import useDetailData from "../hooks/useDetailData.js";
 import DetailPage from "../components/DetailPage.jsx";
 import { formatDateTime, getPrimitiveDetails, firstNonEmpty } from "../utils/detailFields.js";
+import { articleSchema, breadcrumbSchema } from "../lib/structuredData.js";
 
 export default function NewsDetail() {
   const { id } = useParams();
@@ -34,6 +35,14 @@ export default function NewsDetail() {
       imageAlt={title}
       meta={meta}
       additionalFields={additionalFields}
+      structuredData={[
+        articleSchema(item),
+        breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "News", path: "/news" },
+          { name: title, path: `/news/${id}` },
+        ]),
+      ].filter(Boolean)}
     >
       {item?.summary && (
         <div>

@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 
+import SEO from "./SEO.jsx";
+
 function LoadingState() {
   return (
     <div className="min-h-[40vh] flex items-center justify-center">
@@ -52,6 +54,7 @@ export default function DetailPage({
   additionalFields = [],
   children,
   entityName = "Item",
+  structuredData,
 }) {
   if (loading) return <LoadingState />;
   if (error) return <ErrorState message={error} backTo={backTo} backLabel={backLabel} />;
@@ -59,6 +62,23 @@ export default function DetailPage({
 
   return (
     <div className="bg-white">
+      {/* Tagged here rather than in each of the six detail pages, so every one
+          of them gets a real title, canonical and share card. Deliberately
+          below the loading/error/not-found guards: a skeleton would otherwise
+          publish the fallback title ("Event", "News") as canonical, and a
+          not-found page would claim to be the record it could not load. */}
+      <SEO
+        title={title}
+        description={
+          subtitle
+            ? String(subtitle).replace(/\s+/g, " ").trim().slice(0, 160)
+            : `${title} — Department of CSE, LNMIIT Jaipur.`
+        }
+        type="article"
+        image={image}
+        structuredData={structuredData}
+      />
+
       <div className="max-w-6xl mx-auto px-4 py-10">
         <Link
           to={backTo}

@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { User, People } from '../db/models/index.js';
+import { JWT_SECRET, JWT_EXPIRES_IN } from '../config/auth.js';
+import { recordAuthEvent } from '../middleware/auditLog.js';
 
 export const login = async (req, res, next) => {
   try {
@@ -14,6 +16,10 @@ export const login = async (req, res, next) => {
     const user = await User.findOne({ where: { email } });
 
     if (!user || !(await user.validatePassword(password))) {
+      // Failed attempts are recorded too: a run of them against one account is
+      // exactly the signal an audit trail should surface.
+      await recordAuthEvent({ req, user: null, action: 'login', success: false });
+
       return res.status(401).json({
         error: 'Invalid credentials'
       });
@@ -32,9 +38,11 @@ export const login = async (req, res, next) => {
         facultyProfileId: facultyProfile?.id || null,
         mustChangePassword: !!user.must_change_password
       },
-      process.env.JWT_SECRET || 'your-secret-key-change-in-production',
-      { expiresIn: '24h' }
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
     );
+
+    await recordAuthEvent({ req, user, action: 'login', success: true });
 
     res.json({
       data: {

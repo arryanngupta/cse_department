@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { User, People } from '../db/models/index.js';
+import { JWT_SECRET } from '../config/auth.js';
 
 export const authenticate = async (req, res, next) => {
   try {
@@ -11,10 +12,7 @@ export const authenticate = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-    );
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     const user = await User.findByPk(decoded.id, {
       attributes: { exclude: ['password_hash'] }

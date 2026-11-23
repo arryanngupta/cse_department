@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Loading from '../components/Loading.jsx';
 import { publicAPI } from '../lib/api.js';
+import SEO from "../components/SEO.jsx";
 
 const Directory = () => {
   const [directory, setDirectory] = useState([]);
@@ -26,6 +27,12 @@ const Directory = () => {
 
   return (
     <div className="container mx-auto px-4 py-12">
+      <SEO
+        title="Directory"
+        description="Contact directory for the Department of Computer Science & Engineering, LNMIIT Jaipur."
+        keywords="LNMIIT CSE contact, department directory, phone numbers"
+      />
+
       {/* Page Title */}
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold text-[#A6192E] mb-3">

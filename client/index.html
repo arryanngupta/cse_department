@@ -20,7 +20,9 @@
       new google.translate.TranslateElement(
         {
           pageLanguage: 'en',
-          includedLanguages: 'en,hi',
+          // Keep in step with src/lib/languages.js — a code offered in the
+          // switcher but missing here renders an option that does nothing.
+          includedLanguages: 'en,hi,bn,mr,te,ta,gu,kn,ml,pa,or,as,ur,fr,de,es,pt,ru,ar,zh-CN,ja',
           autoDisplay: false
         },
         'google_translate_element'

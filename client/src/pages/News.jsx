@@ -6,6 +6,7 @@ import Loading from "../components/Loading.jsx";
 import SectionHeader from "../components/common/SectionHeader.jsx";
 import PageWrapper from "../components/common/PageWrapper.jsx";
 import { publicAPI } from "../lib/api.js";
+import SEO from "../components/SEO.jsx";
 
 const News = () => {
   const [news, setNews] = useState([]);
@@ -32,8 +33,14 @@ const News = () => {
 
   return (
     <PageWrapper>
+      <SEO
+        title="News"
+        description="Latest news and announcements from the Department of Computer Science & Engineering, LNMIIT Jaipur."
+        keywords="LNMIIT CSE news, department announcements, computer science news"
+      />
+
       <section className="container mx-auto px-4 pt-0 pb-16">
-        <SectionHeader title="Latest News & Updates" />
+        <SectionHeader as="h1" title="Latest News & Updates" />
 
         {loading ? (
           <Loading />
